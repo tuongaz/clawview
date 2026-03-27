@@ -310,6 +310,7 @@ class ActiveInfo:
 
     session_ids: set[str]
     running_cwds: set[str]
+    session_pid: dict[str, int]  # session_id -> pid
 
 
 def _load_active_info(home: str) -> ActiveInfo:
@@ -321,8 +322,12 @@ def _load_active_info(home: str) -> ActiveInfo:
     NOT update the registry file, so the new session ID won't appear in
     ``session_ids``.  We detect this by checking whether a JSONL belongs to a
     cwd that still has a live Claude process.
+
+    When multiple registry entries share the same PID (e.g. after /rename or
+    /clear), only the most recently modified entry is kept so the old session
+    is no longer marked active.
     """
-    info = ActiveInfo(session_ids=set(), running_cwds=set())
+    info = ActiveInfo(session_ids=set(), running_cwds=set(), session_pid={})
     sessions_dir = os.path.join(home, ".claude", "sessions")
 
     try:
@@ -330,11 +335,16 @@ def _load_active_info(home: str) -> ActiveInfo:
     except OSError:
         return info
 
+    # Collect all live registry entries grouped by PID so we can deduplicate.
+    # pid -> list of (file_mod_time, session_id, cwd)
+    pid_entries: dict[int, list[tuple[float, str, str]]] = {}
+
     for name in entries:
         if not name.endswith(".json"):
             continue
         fpath = os.path.join(sessions_dir, name)
         try:
+            stat = os.stat(fpath)
             with open(fpath, encoding="utf-8") as f:
                 data = json.load(f)
         except (OSError, json.JSONDecodeError):
@@ -349,11 +359,19 @@ def _load_active_info(home: str) -> ActiveInfo:
         # Check if process is still running.
         try:
             os.kill(pid, 0)
-            info.session_ids.add(session_id)
-            if cwd:
-                info.running_cwds.add(cwd)
         except (OSError, ProcessLookupError):
-            pass
+            continue
+
+        pid_entries.setdefault(pid, []).append((stat.st_mtime, session_id, cwd))
+
+    # For each PID, only keep the most recently modified registry entry.
+    for pid, elist in pid_entries.items():
+        elist.sort(reverse=True)  # newest first by mod_time
+        _, session_id, cwd = elist[0]
+        info.session_ids.add(session_id)
+        info.session_pid[session_id] = pid
+        if cwd:
+            info.running_cwds.add(cwd)
 
     return info
 
@@ -422,15 +440,25 @@ def load_grouped_sessions(limit: int = 0) -> list[ProjectGroup]:
 
     # Registered session IDs that have been superseded by a newer JSONL in
     # the same cwd (i.e. /clear was used).  These should NOT be marked active.
+    # Only mark as stale when the newer session is from the same PID or is
+    # unregistered (the /clear case).  Two separate processes (different PIDs)
+    # working on the same project are both legitimately active.
     stale_registered: set[str] = set()
     for cwd, (_, newest_sid) in cwd_newest.items():
+        newest_pid = active_info.session_pid.get(newest_sid)
         for sid in active_info.session_ids:
-            if sid != newest_sid:
-                # Check if this registered session belongs to the same cwd.
-                for _, s in parsed:
-                    if s.session_id == sid and s.cwd == cwd:
-                        stale_registered.add(sid)
-                        break
+            if sid == newest_sid:
+                continue
+            sid_pid = active_info.session_pid.get(sid)
+            # If both sessions are registered under different PIDs, they are
+            # independent processes — neither is stale.
+            if newest_pid is not None and sid_pid is not None and newest_pid != sid_pid:
+                continue
+            # Check if this registered session belongs to the same cwd.
+            for _, s in parsed:
+                if s.session_id == sid and s.cwd == cwd:
+                    stale_registered.add(sid)
+                    break
 
     # Second pass: assign active status, project name, IDE client.
     for fpath, sess in parsed:
@@ -455,8 +483,13 @@ def load_grouped_sessions(limit: int = 0) -> list[ProjectGroup]:
     groups: list[ProjectGroup] = []
 
     for dir_name, sessions in project_map.items():
-        # Sort sessions by timestamp descending.
-        sessions.sort(key=lambda s: s.timestamp, reverse=True)
+        # Sort: active sessions first (stable order by session_id), then
+        # inactive sessions by timestamp descending.  Using a stable key for
+        # active sessions prevents them from shifting position on every update.
+        sessions.sort(
+            key=lambda s: (not s.is_active, "" if s.is_active else s.timestamp),
+            reverse=True,
+        )
 
         if limit > 0 and len(sessions) > limit:
             sessions = sessions[:limit]
