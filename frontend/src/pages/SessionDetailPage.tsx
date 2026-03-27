@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { Brain } from 'lucide-react'
 import { Chip, Meter, Spinner } from '@heroui/react'
 import { useSessionDetail } from '../hooks/useSessionDetail'
+import type { Turn } from '../types'
 import {
   timeAgo,
   formatTokens,
@@ -188,6 +190,11 @@ export function SessionDetailPage() {
 
       {/* Tool Usage */}
       <ToolUsageSection toolUsage={detail.toolUsage} mcpToolUsage={detail.mcpToolUsage} />
+
+      {/* Conversation Timeline */}
+      {detail.turns.length > 0 && (
+        <ConversationTimeline turns={detail.turns} />
+      )}
     </div>
   )
 }
@@ -231,6 +238,93 @@ function ToolBarList({ items, color }: { items: [string, number][]; color: strin
           <span className="text-xs text-[var(--text-secondary)] font-mono w-8 text-right shrink-0">{count}</span>
         </div>
       ))}
+    </div>
+  )
+}
+
+const INITIAL_TURNS_SHOWN = 30
+
+function ConversationTimeline({ turns }: { turns: Turn[] }) {
+  const [showAll, setShowAll] = useState(false)
+  const visibleTurns = showAll ? turns : turns.slice(0, INITIAL_TURNS_SHOWN)
+  const hasMore = turns.length > INITIAL_TURNS_SHOWN
+
+  return (
+    <div className="mt-6">
+      <h3 className="text-sm font-semibold text-[var(--text-bright)] mb-3">
+        Conversation Timeline ({turns.length} turn{turns.length !== 1 ? 's' : ''})
+      </h3>
+      <div className="space-y-2">
+        {visibleTurns.map((turn) => (
+          <TurnCard key={turn.index} turn={turn} />
+        ))}
+      </div>
+      {hasMore && !showAll && (
+        <button
+          onClick={() => setShowAll(true)}
+          className="mt-3 w-full py-2 text-sm text-[var(--accent-cyan)] bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg hover:bg-[rgba(88,166,255,0.1)] transition-colors cursor-pointer"
+        >
+          Show all {turns.length} turns ({turns.length - INITIAL_TURNS_SHOWN} more)
+        </button>
+      )}
+    </div>
+  )
+}
+
+function TurnCard({ turn }: { turn: Turn }) {
+  const ts = turn.timestamp ? new Date(turn.timestamp) : null
+  const timeStr = ts && !isNaN(ts.getTime())
+    ? ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    : ''
+
+  return (
+    <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-4 py-3">
+      {/* Turn header */}
+      <div className="flex items-center gap-2 flex-wrap mb-2">
+        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[rgba(88,166,255,0.15)] text-[var(--accent-cyan)] text-[11px] font-mono font-semibold shrink-0">
+          {turn.index}
+        </span>
+        {timeStr && (
+          <span className="text-[var(--text-secondary)] text-xs font-mono">{timeStr}</span>
+        )}
+        {turn.durationMs > 0 && (
+          <span className="text-[var(--text-secondary)] text-[11px] font-mono ml-auto">
+            {formatDuration(turn.durationMs)}
+          </span>
+        )}
+      </div>
+
+      {/* User prompt */}
+      {turn.userPrompt && (
+        <div className="text-sm text-[var(--text-primary)] line-clamp-3 mb-2 whitespace-pre-wrap break-words">
+          {turn.userPrompt}
+        </div>
+      )}
+
+      {/* Tool call chips */}
+      {turn.toolCalls.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {turn.toolCalls.map((tc, i) => (
+            <span
+              key={i}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono bg-[rgba(88,166,255,0.08)] text-[var(--accent-cyan)] border border-[rgba(88,166,255,0.15)]"
+              title={tc.detail}
+            >
+              <span className="font-semibold">{tc.name}</span>
+              {tc.detail && (
+                <span className="text-[var(--text-secondary)] max-w-[200px] truncate">: {tc.detail}</span>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Assistant text snippet */}
+      {turn.assistantText && (
+        <div className="text-xs text-[var(--text-secondary)] line-clamp-2 whitespace-pre-wrap break-words italic">
+          {turn.assistantText}
+        </div>
+      )}
     </div>
   )
 }
