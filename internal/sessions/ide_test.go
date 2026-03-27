@@ -52,3 +52,19 @@ func TestLoadIDEMapMalformedFile(t *testing.T) {
 		t.Errorf("expected empty map for malformed file, got %d entries", len(ideMap))
 	}
 }
+
+func TestSessionClientFieldFromIDEMap(t *testing.T) {
+	dir := t.TempDir()
+	lockData := `{"workspaceFolders":["/tmp/proj"],"pid":99999,"ideName":"VS Code","transport":"ws"}`
+	if err := os.WriteFile(filepath.Join(dir, "12345.lock"), []byte(lockData), 0644); err != nil {
+		t.Fatal(err)
+	}
+	ideMap := loadIDEMap(dir)
+	sess := Session{CWD: "/tmp/proj"}
+	if name, ok := ideMap[sess.CWD]; ok {
+		sess.Client = name
+	}
+	if sess.Client != "VS Code" {
+		t.Errorf("Client = %q, want %q", sess.Client, "VS Code")
+	}
+}

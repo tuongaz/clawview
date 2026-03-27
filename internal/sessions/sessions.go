@@ -53,6 +53,7 @@ type Session struct {
 	ContextTokens    int    `json:"contextTokens"`
 	MaxContextTokens int    `json:"maxContextTokens"`
 	Model            string `json:"model"`
+	Client           string `json:"client"`
 }
 
 // ProjectGroup groups sessions by project directory.
@@ -95,6 +96,9 @@ func LoadGroupedSessions(limit int) ([]ProjectGroup, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	ideDir := filepath.Join(home, ".claude", "ide")
+	ideMap := loadIDEMap(ideDir)
 
 	pattern := filepath.Join(home, ".claude", "projects", "*", "*.jsonl")
 	files, err := filepath.Glob(pattern)
@@ -142,6 +146,9 @@ func LoadGroupedSessions(limit int) ([]ProjectGroup, error) {
 
 		dirName := filepath.Base(filepath.Dir(f))
 		sess.ProjectName = decodeProjectPath(dirName)
+		if client, ok := ideMap[sess.CWD]; ok {
+			sess.Client = client
+		}
 		projectMap[dirName] = append(projectMap[dirName], *sess)
 	}
 
