@@ -116,6 +116,10 @@ function ideDeepLink(client: string, cwd: string): string | null {
   if (c.includes('code')) return `vscode://file/${cwd}`
   if (c.includes('windsurf')) return `windsurf://file/${cwd}`
   if (c.includes('zed')) return `zed://file/${cwd}`
+  if (c.includes('pycharm')) return `pycharm://open?file=${encodeURIComponent(cwd)}`
+  if (c.includes('intellij')) return `idea://open?file=${encodeURIComponent(cwd)}`
+  if (c.includes('goland')) return `goland://open?file=${encodeURIComponent(cwd)}`
+  if (c.includes('webstorm')) return `webstorm://open?file=${encodeURIComponent(cwd)}`
   return null
 }
 
@@ -125,11 +129,8 @@ export function SessionCard({ session }: SessionCardProps) {
   const hasFooter = session.gitBranch || session.usesMemory || session.client
 
   return (
-    <div className={`session-card ${isActive ? 'session-active' : ''}`}>
+    <div className={`session-card ${isActive ? (session.waitingForInput ? 'session-waiting-input' : 'session-active') : ''}`}>
       <div className="session-card-header">
-        <span className={`session-slug ${isActive ? 'slug-active' : 'slug-idle'}`}>
-          {slug}
-        </span>
         {isActive && !session.waitingForInput && <span className="session-active-dot" />}
         {isActive && session.waitingForInput && (
           <span className="session-waiting" title="Waiting for input">
@@ -138,6 +139,9 @@ export function SessionCard({ session }: SessionCardProps) {
             </svg>
           </span>
         )}
+        <span className={`session-slug ${isActive ? 'slug-active' : 'slug-idle'}`}>
+          {slug}
+        </span>
         <div className="session-meta">
           <span className="session-time">{timeAgo(session.timestamp)}</span>
         </div>

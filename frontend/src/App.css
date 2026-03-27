@@ -165,6 +165,17 @@ body {
   padding-bottom: 4px;
 }
 
+.project-active-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--accent-green);
+  box-shadow: 0 0 8px rgba(63, 185, 80, 0.5);
+  display: inline-block;
+  flex-shrink: 0;
+  animation: pulse-blink 2s ease-in-out infinite;
+}
+
 .project-color-bar {
   width: 3px;
   height: 18px;
@@ -234,7 +245,12 @@ body {
 
 .session-card.session-active {
   background-color: var(--bg-card);
-  border-left: 3px solid var(--accent-green);
+  border-color: var(--accent-green);
+}
+
+.session-card.session-waiting-input {
+  background-color: var(--bg-card);
+  border-color: var(--accent-yellow);
 }
 
 .session-card-header {
