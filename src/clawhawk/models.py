@@ -35,6 +35,70 @@ class Session(BaseModel):
     client: str = ""
 
 
+class TurnToolCall(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    name: str = ""
+    detail: str = ""
+
+
+class TurnUsage(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    input_tokens: int = 0
+    output_tokens: int = 0
+    cache_creation_input_tokens: int = 0
+    cache_read_input_tokens: int = 0
+
+
+class Turn(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    index: int = 0
+    timestamp: str = ""
+    user_prompt: str = ""
+    assistant_text: str = ""
+    tool_calls: list[TurnToolCall] = []
+    usage: TurnUsage = TurnUsage()
+    duration_ms: int = 0
+    model: str = ""
+    stop_reason: str = ""
+
+
+class SessionDetail(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    # All Session fields
+    session_id: str = ""
+    name: str = ""
+    project_name: str = ""
+    cwd: str = ""
+    git_branch: str = ""
+    timestamp: str = ""
+    first_prompt: str = ""
+    last_user_prompt: str = ""
+    last_action: str = ""
+    is_active: bool = False
+    waiting_for_input: bool = False
+    uses_memory: bool = False
+    version: str = ""
+    context_tokens: int = 0
+    max_context_tokens: int = 0
+    model: str = ""
+    client: str = ""
+
+    # Detail-specific fields
+    tool_usage: dict[str, int] = {}
+    mcp_tool_usage: dict[str, int] = {}
+    total_input_tokens: int = 0
+    total_output_tokens: int = 0
+    total_cache_creation_tokens: int = 0
+    total_cache_read_tokens: int = 0
+    total_duration_ms: int = 0
+    turn_count: int = 0
+    turns: list[Turn] = []
+
+
 class ProjectGroup(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
