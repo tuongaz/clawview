@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from clawhawk.ide import load_ide_map
-from clawhawk.models import Message, ProjectGroup, Session
+from clawhawk.models import Message, ProjectGroup, Session, SessionDetail, Turn, TurnToolCall
 
 logger = logging.getLogger(__name__)
 
@@ -152,6 +152,22 @@ def _extract_tool_detail(tool_name: str, tool_input: object) -> str:
             return truncate(u, 120)
 
     return ""
+
+
+def _is_real_user_prompt(content: object) -> bool:
+    """Check if user message content is a real prompt, not just tool results.
+
+    A real user prompt is a string or a list containing at least one text part.
+    Lists containing only tool_result parts are tool-result feedback, not new turns.
+    """
+    if isinstance(content, str):
+        return bool(content.strip())
+    if isinstance(content, list):
+        for part in content:
+            if isinstance(part, dict) and part.get("type") == "text":
+                return True
+        return False
+    return False
 
 
 def extract_action(content: object) -> str:
@@ -294,6 +310,217 @@ def parse_session(fpath: str) -> Session | None:
         context_tokens=last_context_tokens,
         max_context_tokens=get_model_context_limit(last_model),
         version=version,
+    )
+
+
+def parse_session_detail(fpath: str) -> SessionDetail | None:
+    """Parse a JSONL session file into a full SessionDetail with conversation turns.
+
+    Returns None if the file cannot be parsed or contains no valid session data.
+    """
+    # Metadata (mirrors parse_session)
+    session_id = ""
+    session_name = ""
+    cwd = ""
+    git_branch = ""
+    last_ts = ""
+    version = ""
+    first_prompt = ""
+    last_user_prompt = ""
+    last_action = ""
+    waiting_for_input = False
+    last_model = ""
+    last_context_tokens = 0
+
+    # Turns
+    turns: list[Turn] = []
+    current_turn: Turn | None = None
+    turn_index = 0
+
+    # Aggregates
+    tool_usage: dict[str, int] = {}
+    mcp_tool_usage: dict[str, int] = {}
+    total_input = 0
+    total_output = 0
+    total_cache_creation = 0
+    total_cache_read = 0
+    total_duration = 0
+
+    try:
+        with open(fpath, encoding="utf-8", errors="replace") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+
+                # Parse raw JSON first for fields not in the Message model.
+                try:
+                    raw = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+
+                # Check for duration events (durationMs at top level).
+                duration_ms = raw.get("durationMs")
+                if duration_ms is not None and isinstance(duration_ms, (int, float)):
+                    dur = int(duration_ms)
+                    if current_turn is not None:
+                        current_turn.duration_ms = dur
+                    total_duration += dur
+
+                # Parse as Message model.
+                try:
+                    msg = Message.model_validate(raw)
+                except Exception:
+                    continue
+
+                # Capture session metadata.
+                if not session_id and msg.session_id:
+                    session_id = msg.session_id
+                if msg.cwd:
+                    cwd = msg.cwd
+                if msg.git_branch:
+                    git_branch = msg.git_branch
+                if msg.timestamp:
+                    last_ts = msg.timestamp
+                if msg.version:
+                    version = msg.version
+                if msg.type == "agent-name" and msg.agent_name:
+                    session_name = msg.agent_name
+
+                # Track waiting state.
+                if msg.type == "user":
+                    waiting_for_input = False
+                elif msg.type == "assistant" and msg.message.stop_reason == "end_turn":
+                    waiting_for_input = True
+                elif msg.type == "assistant" and msg.message.stop_reason == "tool_use":
+                    waiting_for_input = False
+
+                # User prompt handling.
+                if msg.type == "user":
+                    text = extract_user_text(msg.message.content)
+                    if text:
+                        if not first_prompt:
+                            first_prompt = truncate(text, 120)
+                        last_user_prompt = _truncate_keep_newlines(text, 200)
+
+                    # Start a new turn on real user prompts.
+                    if _is_real_user_prompt(msg.message.content):
+                        if current_turn is not None:
+                            turns.append(current_turn)
+                        turn_index += 1
+                        current_turn = Turn(
+                            index=turn_index,
+                            timestamp=msg.timestamp or last_ts,
+                            user_prompt=extract_user_text(msg.message.content),
+                        )
+
+                # Assistant message handling.
+                if msg.type == "assistant" and current_turn is not None:
+                    action = extract_action(msg.message.content)
+                    if action:
+                        last_action = action
+
+                    if msg.message.model:
+                        last_model = msg.message.model
+                        current_turn.model = msg.message.model
+
+                    if msg.message.stop_reason:
+                        current_turn.stop_reason = msg.message.stop_reason
+
+                    # Accumulate usage for the turn.
+                    u = msg.message.usage
+                    current_turn.usage.input_tokens += u.input_tokens
+                    current_turn.usage.output_tokens += u.output_tokens
+                    current_turn.usage.cache_creation_input_tokens += (
+                        u.cache_creation_input_tokens
+                    )
+                    current_turn.usage.cache_read_input_tokens += (
+                        u.cache_read_input_tokens
+                    )
+
+                    total_input += u.input_tokens
+                    total_output += u.output_tokens
+                    total_cache_creation += u.cache_creation_input_tokens
+                    total_cache_read += u.cache_read_input_tokens
+
+                    # Context tokens from latest assistant message.
+                    ctx = (
+                        u.input_tokens
+                        + u.cache_creation_input_tokens
+                        + u.cache_read_input_tokens
+                    )
+                    if ctx > 0:
+                        last_context_tokens = ctx
+
+                    # Extract assistant text and tool calls from content.
+                    content = msg.message.content
+                    if isinstance(content, str) and content.strip():
+                        current_turn.assistant_text = truncate(content, 500)
+                    elif isinstance(content, list):
+                        text_parts: list[str] = []
+                        for part in content:
+                            if not isinstance(part, dict):
+                                continue
+                            ptype = part.get("type", "")
+                            if ptype == "text":
+                                t = part.get("text", "")
+                                if isinstance(t, str) and t.strip():
+                                    text_parts.append(t.strip())
+                            elif ptype == "tool_use":
+                                name = part.get("name", "")
+                                if isinstance(name, str) and name:
+                                    detail = _extract_tool_detail(
+                                        name, part.get("input")
+                                    )
+                                    current_turn.tool_calls.append(
+                                        TurnToolCall(name=name, detail=detail)
+                                    )
+                                    if name.startswith("mcp__"):
+                                        mcp_tool_usage[name] = (
+                                            mcp_tool_usage.get(name, 0) + 1
+                                        )
+                                    else:
+                                        tool_usage[name] = (
+                                            tool_usage.get(name, 0) + 1
+                                        )
+                        if text_parts:
+                            combined = " ".join(text_parts)
+                            current_turn.assistant_text = truncate(combined, 500)
+
+        # Append the last turn.
+        if current_turn is not None:
+            turns.append(current_turn)
+
+    except OSError:
+        logger.warning("Failed to read session file: %s", fpath)
+        return None
+
+    if not session_id:
+        return None
+
+    return SessionDetail(
+        session_id=session_id,
+        name=session_name,
+        cwd=cwd,
+        git_branch=git_branch,
+        timestamp=last_ts,
+        first_prompt=first_prompt,
+        last_user_prompt=last_user_prompt,
+        last_action=truncate(last_action, 160),
+        waiting_for_input=waiting_for_input,
+        model=last_model,
+        context_tokens=last_context_tokens,
+        max_context_tokens=get_model_context_limit(last_model),
+        version=version,
+        tool_usage=tool_usage,
+        mcp_tool_usage=mcp_tool_usage,
+        total_input_tokens=total_input,
+        total_output_tokens=total_output,
+        total_cache_creation_tokens=total_cache_creation,
+        total_cache_read_tokens=total_cache_read,
+        total_duration_ms=total_duration,
+        turn_count=len(turns),
+        turns=turns,
     )
 
 
