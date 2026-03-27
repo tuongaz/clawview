@@ -18,6 +18,42 @@ export interface Session {
   client: string
 }
 
+export interface TurnToolCall {
+  name: string
+  detail: string
+}
+
+export interface TurnUsage {
+  inputTokens: number
+  outputTokens: number
+  cacheCreationInputTokens: number
+  cacheReadInputTokens: number
+}
+
+export interface Turn {
+  index: number
+  timestamp: string
+  userPrompt: string
+  assistantText: string
+  toolCalls: TurnToolCall[]
+  usage: TurnUsage
+  durationMs: number
+  model: string
+  stopReason: string
+}
+
+export interface SessionDetail extends Session {
+  toolUsage: Record<string, number>
+  mcpToolUsage: Record<string, number>
+  totalInputTokens: number
+  totalOutputTokens: number
+  totalCacheCreationTokens: number
+  totalCacheReadTokens: number
+  totalDurationMs: number
+  turnCount: number
+  turns: Turn[]
+}
+
 export interface ProjectGroup {
   projectName: string
   path: string

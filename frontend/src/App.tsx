@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { useWebSocket } from './hooks/useWebSocket'
 import { Header } from './components/Header'
 import { ProjectBox } from './components/ProjectBox'
+import { SessionDetailPage } from './pages/SessionDetailPage'
 import './App.css'
 
 export function timeAgo(timestamp: string): string {
@@ -18,7 +20,7 @@ export function timeAgo(timestamp: string): string {
   return `${days}d ago`
 }
 
-function App() {
+function Dashboard() {
   const { groups, stats, connected } = useWebSocket()
   const [activeOnly, setActiveOnly] = useState(false)
 
@@ -57,6 +59,17 @@ function App() {
         )}
       </main>
     </div>
+  )
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/session/:sessionId" element={<SessionDetailPage />} />
+      </Routes>
+    </BrowserRouter>
   )
 }
 
