@@ -16,7 +16,7 @@ export function timeAgo(timestamp: string): string {
 }
 
 function App() {
-  const { groups, stats, connected, lastUpdated } = useWebSocket()
+  const { groups, stats, connected } = useWebSocket()
   const [activeOnly, setActiveOnly] = useState(false)
 
   const filteredGroups = useMemo(() => {
@@ -29,12 +29,11 @@ function App() {
   return (
     <div className="w-full px-8 py-6 max-sm:px-4 max-sm:py-4">
       <Header
-        groups={filteredGroups}
+        groups={groups}
         stats={stats}
         connected={connected}
-        lastUpdated={lastUpdated}
         activeOnly={activeOnly}
-        onToggleActiveOnly={() => setActiveOnly((v) => !v)}
+        onToggleActiveOnly={setActiveOnly}
       />
       <main className="flex flex-col gap-7">
         {filteredGroups.map((group) => (

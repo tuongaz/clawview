@@ -383,8 +383,13 @@ def load_grouped_sessions(limit: int = 0) -> list[ProjectGroup]:
     # Group sessions by project directory name.
     project_map: dict[str, list[Session]] = {}
 
+    # First pass: parse all sessions and track the most recently modified
+    # JSONL per running cwd (handles /clear creating a new session ID that
+    # isn't in the registry).
+    cwd_newest: dict[str, tuple[float, str]] = {}  # cwd -> (mod_time, session_id)
+    parsed: list[tuple[str, Session]] = []  # (fpath, session)
+
     for fpath in files:
-        # Skip anything under a subagents/ directory.
         if os.sep + "subagents" + os.sep in fpath:
             continue
 
@@ -395,33 +400,35 @@ def load_grouped_sessions(limit: int = 0) -> list[ProjectGroup]:
 
         mod_time = stat.st_mtime
 
-        # Check cache.
         cached = _cache.get(fpath)
         if cached is not None and cached.mod_time == mod_time:
             sess = cached.session.model_copy()
         else:
-            parsed = parse_session(fpath)
-            if parsed is None:
+            result = parse_session(fpath)
+            if result is None:
                 continue
-            sess = parsed
+            sess = result
             _cache[fpath] = CachedSession(mod_time=mod_time, session=sess.model_copy())
 
-        # A session is active if its ID appears in the registry, OR if its
-        # cwd has a running Claude process and the JSONL was recently modified
-        # (handles /clear which creates a new session ID without updating the
-        # registry).
-        _RECENCY_SECS = 30
+        if sess.cwd in active_info.running_cwds:
+            prev = cwd_newest.get(sess.cwd)
+            if prev is None or mod_time > prev[0]:
+                cwd_newest[sess.cwd] = (mod_time, sess.session_id)
+
+        parsed.append((fpath, sess))
+
+    # Session IDs that are the newest file for a running cwd.
+    cwd_active_ids: set[str] = {sid for _, sid in cwd_newest.values()}
+
+    # Second pass: assign active status, project name, IDE client.
+    for fpath, sess in parsed:
         is_registered = sess.session_id in active_info.session_ids
-        is_recent_in_active_cwd = (
-            sess.cwd in active_info.running_cwds
-            and (now - mod_time) < _RECENCY_SECS
-        )
-        sess.is_active = is_registered or is_recent_in_active_cwd
+        is_newest_in_active_cwd = sess.session_id in cwd_active_ids
+        sess.is_active = is_registered or is_newest_in_active_cwd
 
         dir_name = os.path.basename(os.path.dirname(fpath))
         sess.project_name = decode_project_path(dir_name)
 
-        # Assign IDE client from ide_map.
         for folder, client in ide_map.items():
             if sess.cwd == folder or sess.cwd.startswith(folder + os.sep):
                 sess.client = client

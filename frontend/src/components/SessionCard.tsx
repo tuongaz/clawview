@@ -144,7 +144,7 @@ export function SessionCard({ session, projectPath }: SessionCardProps) {
 
   return (
     <Card
-      className={`bg-[var(--bg-primary)] border ${borderClass} hover:bg-[var(--bg-card)] ${isActive ? 'bg-[var(--bg-card)]' : ''}`}
+      className={`bg-[var(--bg-primary)] border ${borderClass} hover:bg-[var(--bg-card)] shadow-md shadow-black/20 ${isActive ? 'bg-[var(--bg-card)]' : ''}`}
     >
       <Card.Header className="flex-row items-center gap-2 px-4 pt-3 pb-0">
         {isActive && !isWaiting ? (
@@ -189,8 +189,12 @@ export function SessionCard({ session, projectPath }: SessionCardProps) {
         )}
 
         {session.lastAction && (
-          <div className="flex items-start gap-1.5 text-warning text-[11px] font-mono bg-warning/[0.08] py-1 px-2.5 rounded-[var(--radius-sm)] line-clamp-2 break-words">
-            <span className="text-[11px] shrink-0">&#9889;</span>
+          <div className="flex items-center gap-1.5 text-warning text-[11px] font-mono bg-warning/[0.08] py-1 px-2.5 rounded-[var(--radius-sm)] line-clamp-2 break-words">
+            {isActive && !isWaiting ? (
+              <span className="inline-block w-[6px] h-[6px] rounded-full bg-yellow-400 shadow-[0_0_6px_rgba(250,204,21,0.5)] animate-pulse-blink shrink-0" />
+            ) : (
+              <span className="text-[11px] shrink-0">&#9889;</span>
+            )}
             {session.lastAction}
           </div>
         )}
