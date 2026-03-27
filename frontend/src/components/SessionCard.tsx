@@ -150,7 +150,13 @@ export function SessionCard({ session, projectPath }: SessionCardProps) {
       </div>
 
       {session.lastUserPrompt && (
-        <div className="session-user-prompt">{session.lastUserPrompt}</div>
+        <div className="session-user-prompt">
+          {session.lastUserPrompt.startsWith('/') ? (
+            <><span className="command-icon">⌘</span> {session.lastUserPrompt}</>
+          ) : (
+            session.lastUserPrompt
+          )}
+        </div>
       )}
 
       {session.lastAction && (

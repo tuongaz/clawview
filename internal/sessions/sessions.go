@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -88,6 +90,40 @@ type messageContent struct {
 	Usage      messageUsage `json:"usage"`
 }
 
+type activeSessionFile struct {
+	PID       int    `json:"pid"`
+	SessionID string `json:"sessionId"`
+}
+
+// loadActiveSessionIDs reads ~/.claude/sessions/*.json to find sessions
+// whose process is still running. Returns a set of active session IDs.
+func loadActiveSessionIDs(home string) map[string]bool {
+	active := make(map[string]bool)
+	dir := filepath.Join(home, ".claude", "sessions")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return active
+	}
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".json") {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(dir, e.Name()))
+		if err != nil {
+			continue
+		}
+		var sf activeSessionFile
+		if err := json.Unmarshal(data, &sf); err != nil || sf.SessionID == "" || sf.PID == 0 {
+			continue
+		}
+		// Check if process is still running.
+		if err := syscall.Kill(sf.PID, 0); err == nil {
+			active[sf.SessionID] = true
+		}
+	}
+	return active
+}
+
 // LoadGroupedSessions reads all JSONL session files from ~/.claude/projects/,
 // parses them, groups by project, and returns sorted results.
 // If limit > 0, only that many sessions per project are returned.
@@ -99,6 +135,7 @@ func LoadGroupedSessions(limit int) ([]ProjectGroup, error) {
 
 	ideDir := filepath.Join(home, ".claude", "ide")
 	ideMap := loadIDEMap(ideDir)
+	activeSessions := loadActiveSessionIDs(home)
 
 	pattern := filepath.Join(home, ".claude", "projects", "*", "*.jsonl")
 	files, err := filepath.Glob(pattern)
@@ -137,12 +174,8 @@ func LoadGroupedSessions(limit int) ([]ProjectGroup, error) {
 			cacheMu.Unlock()
 		}
 
-		// Recompute isActive since it's time-dependent.
-		if sess.Timestamp != "" {
-			if t, err := time.Parse(time.RFC3339Nano, sess.Timestamp); err == nil {
-				sess.IsActive = time.Since(t) < 5*time.Minute
-			}
-		}
+		// A session is active only if its Claude Code process is still running.
+		sess.IsActive = activeSessions[sess.SessionID]
 
 		dirName := filepath.Base(filepath.Dir(f))
 		sess.ProjectName = decodeProjectPath(dirName)
@@ -312,13 +345,6 @@ func parseSession(fpath string) (*Session, error) {
 	sess.ContextTokens = lastContextTokens
 	sess.MaxContextTokens = getModelContextLimit(lastModel)
 
-	// Determine if the session is active (last message within 5 minutes).
-	if lastTS != "" {
-		if t, err := time.Parse(time.RFC3339Nano, lastTS); err == nil {
-			sess.IsActive = time.Since(t) < 5*time.Minute
-		}
-	}
-
 	return &sess, nil
 }
 
@@ -329,7 +355,7 @@ func extractUserText(content any) string {
 
 	// User messages typically have string content.
 	if s, ok := content.(string); ok {
-		return s
+		return cleanCommandText(s)
 	}
 
 	// Sometimes content is an array of parts.
@@ -338,7 +364,7 @@ func extractUserText(content any) string {
 			if m, ok := part.(map[string]any); ok {
 				if t, ok := m["type"].(string); ok && t == "text" {
 					if text, ok := m["text"].(string); ok {
-						return text
+						return cleanCommandText(text)
 					}
 				}
 			}
@@ -456,6 +482,22 @@ func truncate(s string, max int) string {
 		return s[:max]
 	}
 	return s[:max-3] + "..."
+}
+
+var reCommandName = regexp.MustCompile(`<command-name>\s*(.*?)\s*</command-name>`)
+
+// cleanCommandText detects command XML tags in user messages and returns
+// just the slash command (e.g. "/clear") instead of the raw XML.
+func cleanCommandText(s string) string {
+	m := reCommandName.FindStringSubmatch(s)
+	if m == nil {
+		return s
+	}
+	cmd := strings.TrimSpace(m[1])
+	if cmd == "" {
+		return s
+	}
+	return cmd
 }
 
 func truncateKeepNewlines(s string, max int) string {

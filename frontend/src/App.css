@@ -402,6 +402,12 @@ body {
   white-space: nowrap;
 }
 
+.command-icon {
+  font-size: 11px;
+  opacity: 0.6;
+  margin-right: 2px;
+}
+
 .action-icon {
   font-size: 11px;
   flex-shrink: 0;
