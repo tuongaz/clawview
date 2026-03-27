@@ -27,7 +27,7 @@ function App() {
   }, [groups, activeOnly])
 
   return (
-    <div className="app">
+    <div className="w-full px-8 py-6 max-sm:px-4 max-sm:py-4">
       <Header
         groups={filteredGroups}
         stats={stats}
@@ -36,7 +36,7 @@ function App() {
         activeOnly={activeOnly}
         onToggleActiveOnly={() => setActiveOnly((v) => !v)}
       />
-      <main className="main">
+      <main className="flex flex-col gap-7">
         {filteredGroups.map((group) => (
           <ProjectBox
             key={group.projectName}
@@ -44,12 +44,14 @@ function App() {
           />
         ))}
         {filteredGroups.length === 0 && connected && (
-          <div className="empty-state">
+          <div className="text-center text-[var(--text-secondary)] py-20 text-sm bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg">
             {activeOnly ? 'No running sessions.' : 'No sessions found.'}
           </div>
         )}
         {!connected && groups.length === 0 && (
-          <div className="empty-state">Connecting to server...</div>
+          <div className="text-center text-[var(--text-secondary)] py-20 text-sm bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg">
+            Connecting to server...
+          </div>
         )}
       </main>
     </div>
