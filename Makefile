@@ -2,17 +2,17 @@
 
 build:
 	cd frontend && bun install && bun run build
-	go build -o clawhawk .
+	uv sync
 
 run: build
-	./clawhawk
+	uv run clawhawk
 
 dev:
 	@echo "Run in two terminals:"
 	@echo "  Terminal 1: cd frontend && bun run dev"
-	@echo "  Terminal 2: go run ."
+	@echo "  Terminal 2: uv run clawhawk"
 
 clean:
-	rm -f clawhawk
 	rm -rf web/dist
 	rm -rf frontend/node_modules
+	rm -rf .venv

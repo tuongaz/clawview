@@ -4,12 +4,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What is ClawHawk
 
-A real-time dashboard for monitoring Claude Code sessions. Go backend reads JSONL session files from `~/.claude/projects/`, parses them, and pushes grouped data to a React frontend over WebSocket. Ships as a single binary with the frontend embedded.
+A real-time dashboard for monitoring Claude Code sessions. Python (FastAPI) backend reads JSONL session files from `~/.claude/projects/`, parses them, and pushes grouped data to a React frontend over WebSocket. Frontend is built with Vite/React and served as static files.
 
 ## Build & Run
 
 ```bash
-make build          # Build frontend (bun) + Go binary
+make build          # Build frontend (bun) + sync Python deps (uv)
 make run            # Build and run on :3333
-make clean          # Remove binary, dist/, node_modules
+make clean          # Remove web/dist, frontend/node_modules, .venv
 ```
+
+## Development
+
+- Backend: `uv run clawhawk` (Python, source in `src/clawhawk/`)
+- Frontend: `cd frontend && bun run dev` (React/Vite)
+- Tests: `uv run pytest`
+- Typecheck: `uv run pyright src/clawhawk/`
