@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { Session } from '../types'
 import { timeAgo } from '../App'
 
@@ -96,7 +97,7 @@ const TerminalIcon = () => (
   </svg>
 )
 
-function getClientIcon(client: string): JSX.Element {
+function getClientIcon(client: string): ReactNode {
   const c = client.toLowerCase()
   if (c.includes('cursor')) return <CursorIcon />
   if (c.includes('code')) return <VSCodeIcon />
