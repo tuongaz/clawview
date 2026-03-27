@@ -14,6 +14,7 @@ export interface Session {
   contextTokens: number
   maxContextTokens: number
   model: string
+  client: string
 }
 
 export interface ProjectGroup {

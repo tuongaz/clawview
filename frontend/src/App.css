@@ -385,6 +385,24 @@ body {
   border: 1px solid rgba(188, 140, 255, 0.2);
 }
 
+.badge-client {
+  color: var(--accent-cyan);
+  background-color: rgba(88, 166, 255, 0.1);
+  border: 1px solid rgba(88, 166, 255, 0.2);
+  text-decoration: none;
+  cursor: default;
+}
+
+a.badge-client {
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+a.badge-client:hover {
+  background-color: rgba(88, 166, 255, 0.2);
+  border-color: rgba(88, 166, 255, 0.4);
+}
+
 /* ─── Show More ───────────────────────────────────── */
 .show-more-row {
   grid-column: 1 / -1;
