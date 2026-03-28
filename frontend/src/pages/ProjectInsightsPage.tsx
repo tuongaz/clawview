@@ -1,5 +1,5 @@
 import { useMemo, Suspense, lazy } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { Skeleton } from '@heroui/react'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { Header } from '../components/Header'
@@ -29,14 +29,7 @@ export function ProjectInsightsPage() {
 
   return (
     <div className="w-full min-h-screen">
-      <Header>
-        <Link
-          to="/"
-          className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-        >
-          &larr; Back to Dashboard
-        </Link>
-      </Header>
+      <Header />
 
       <div className="px-8 py-6 max-sm:px-4 max-sm:py-4 max-w-[1400px] mx-auto">
         <div className="mb-6">
