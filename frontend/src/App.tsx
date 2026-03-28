@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { Dashboard } from './pages/Dashboard'
 import { SessionDetailPage } from './pages/SessionDetailPage'
-import { InsightsPage } from './pages/InsightsPage'
+import { ProjectInsightsPage } from './pages/ProjectInsightsPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { MemoryPanel } from './components/MemorySidebar'
 import { SkillPanel } from './components/SkillSidebar'
@@ -14,7 +14,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/insights" element={<InsightsPage />} />
+          <Route path="/insights/:projectId" element={<ProjectInsightsPage />} />
           <Route path="/session/:sessionId" element={<SessionDetailPage />}>
             <Route path="memory" element={<MemoryPanel />} />
             <Route path="skills/:skillName" element={<SkillPanel />} />

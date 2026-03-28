@@ -122,7 +122,7 @@ export function Dashboard() {
       </Header>
 
       <div className="w-full px-8 py-6 max-sm:px-4 max-sm:py-4">
-        <main className="flex flex-col gap-7">
+        <main className="flex flex-col gap-13">
           {loading ? (
             <DashboardSkeleton />
           ) : (
