@@ -93,3 +93,19 @@ Started: Sat 28 Mar 2026 19:49:06 AEDT
   - The `_load_session_detail()` helper is reused across WS endpoints for activity checks
   - json import was moved to top-level in ws.py (was previously local in `_serialize_memory_files`)
 ---
+
+## 2026-03-28 - US-006
+- Added `ProjectInsights` TypeScript interface and all sub-interfaces to `frontend/src/types.ts`
+- Sub-interfaces: InsightsOverview, InsightsTools, InsightsSessions, DailyStatEntry, HourlyTokens, InsightsHourlyPattern, ErrorDetail, InsightsErrors, ModelStats, InsightsUserInteractions, InsightsCache, CommandDetail
+- Created `frontend/src/hooks/useInsights.ts` following the exact same pattern as `useSessionDetail`
+- Hook connects to `/ws/insights/{sessionId}`, returns `{ insights, loading, error }`
+- Auto-reconnects via `useWebSocketConnection`, cleans up on unmount
+- Exported from `frontend/src/hooks/index.ts`
+- Files changed: `frontend/src/types.ts`, `frontend/src/hooks/useInsights.ts`, `frontend/src/hooks/index.ts`, `ralph/prd.json`, `ralph/progress.txt`
+- **Learnings for future iterations:**
+  - Existing codebase uses a single `frontend/src/types.ts` file (not a `types/` directory) — keep all types there for import consistency (`'../types'`)
+  - `useWebSocketConnection` handles reconnection with exponential backoff, cleanup on unmount — just reuse it, no custom WS logic needed
+  - Hook pattern: `useState` for data/loading/error + `useCallback` for onMessage + `useWebSocketConnection` call — identical across all WS hooks
+  - Backend sends `{ error: "..." }` on WS errors, so the hook's `onMessage` checks for `data.error` field
+  - Hourly pattern keys from Python are integers (0-23), but JSON serializes them as string keys — TS types use `Record<string, ...>`
+---

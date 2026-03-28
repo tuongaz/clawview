@@ -79,3 +79,122 @@ export interface TokenStats {
   thisWeek: TokenPeriod
   thisMonth: TokenPeriod
 }
+
+// ---------------------------------------------------------------------------
+// Project Insights (from /ws/insights/{sessionId})
+// ---------------------------------------------------------------------------
+
+export interface InsightsOverview {
+  total_messages: number
+  total_tokens: {
+    input: number
+    output: number
+    cache_read: number
+    cache_creation: number
+  }
+  session_count: number
+  date_range: { start: string | null; end: string | null }
+  message_types: Record<string, number>
+}
+
+export interface InsightsTools {
+  usage_counts: Record<string, number>
+  error_counts: Record<string, number>
+  error_rates: Record<string, number>
+}
+
+export interface InsightsSessions {
+  count: number
+  average_duration_seconds: number
+  average_messages: number
+  sessions_with_errors: number
+}
+
+export interface DailyStatEntry {
+  messages: number
+  sessions: number
+  tokens: Record<string, number>
+  cost: number
+}
+
+export interface HourlyTokens {
+  input: number
+  output: number
+  cache_creation: number
+  cache_read: number
+}
+
+export interface InsightsHourlyPattern {
+  messages: Record<string, number>
+  tokens: Record<string, HourlyTokens>
+}
+
+export interface ErrorDetail {
+  timestamp: string
+  session_id: string
+  category: string
+  text: string
+}
+
+export interface InsightsErrors {
+  total: number
+  error_rate: number
+  by_category: Record<string, number>
+  details: ErrorDetail[]
+}
+
+export interface ModelStats {
+  count: number
+  input_tokens: number
+  output_tokens: number
+  cache_creation_tokens: number
+  cache_read_tokens: number
+}
+
+export interface InsightsUserInteractions {
+  real_user_messages: number
+  commands_requiring_tools: number
+  tool_use_rate: number
+  avg_tools_per_command: number
+  avg_steps_per_command: number
+  avg_tokens_per_command: number
+  interruption_rate: number
+  tool_count_distribution: Record<string, number>
+  model_distribution: Record<string, number>
+}
+
+export interface InsightsCache {
+  total_created: number
+  total_read: number
+  hit_rate: number
+  efficiency: number
+  tokens_saved: number
+  cost_saved: number
+  break_even: boolean
+  roi: number
+}
+
+export interface CommandDetail {
+  user_message: string
+  timestamp: string
+  session_id: string
+  model: string
+  steps: number
+  tools_count: number
+  tokens: number
+  interrupted: boolean
+  tool_names: string[]
+}
+
+export interface ProjectInsights {
+  overview: InsightsOverview
+  tools: InsightsTools
+  sessions: InsightsSessions
+  daily_stats: Record<string, DailyStatEntry>
+  hourly_pattern: InsightsHourlyPattern
+  errors: InsightsErrors
+  models: Record<string, ModelStats>
+  user_interactions: InsightsUserInteractions
+  cache: InsightsCache
+  command_details: CommandDetail[]
+}

@@ -114,7 +114,7 @@
         "Typecheck passes: `cd frontend && npx tsc --noEmit`"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "Follow existing hook patterns in the codebase (useSessionDetail). Types must exactly match the backend payload structure."
     },
     {
