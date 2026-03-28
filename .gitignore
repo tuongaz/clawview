@@ -6,7 +6,7 @@
 *.dylib
 *.test
 *.out
-/clawhawk
+/clawlens
 
 # Go
 go.work

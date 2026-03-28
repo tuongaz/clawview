@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from clawhawk.pricing import MODEL_PRICING, calculate_cost, _get_model_pricing
+from clawlens.pricing import MODEL_PRICING, calculate_cost, _get_model_pricing
 
 
 # ---------------------------------------------------------------------------

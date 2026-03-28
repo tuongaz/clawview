@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## What is ClawHawk
+## What is ClawLens
 
 A real-time dashboard for monitoring Claude Code sessions. Python (FastAPI) backend reads JSONL session files from `~/.claude/projects/`, parses them, and pushes grouped data to a React frontend over WebSocket. Frontend is built with Vite/React and served as static files.
 
@@ -16,7 +16,7 @@ make clean          # Remove web/dist, frontend/node_modules, .venv
 
 ## Development
 
-- Backend: `uv run clawhawk` (Python, source in `src/clawhawk/`)
+- Backend: `uv run clawlens` (Python, source in `src/clawlens/`)
 - Frontend: `cd frontend && bun run dev` (React/Vite)
 - Tests: `uv run pytest`
-- Typecheck: `uv run pyright src/clawhawk/`
+- Typecheck: `uv run pyright src/clawlens/`

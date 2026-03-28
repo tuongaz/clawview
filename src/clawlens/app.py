@@ -1,4 +1,4 @@
-"""ClawHawk – real-time Claude Code session dashboard."""
+"""ClawLens – real-time Claude Code session dashboard."""
 
 import argparse
 import asyncio
@@ -10,25 +10,25 @@ from fastapi import FastAPI, Request, WebSocket
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from clawhawk.sessions import (
+from clawlens.sessions import (
     enrich_session_detail,
     find_session_file,
     load_memory_files,
     load_skill_content,
     parse_session_detail,
 )
-from clawhawk.ws import (
+from clawlens.ws import (
     session_detail_websocket,
     session_insights_websocket,
     session_memory_websocket,
     websocket_endpoint,
 )
 
-# Resolve web/dist relative to the project root (3 levels up from src/clawhawk/app.py)
+# Resolve web/dist relative to the project root (3 levels up from src/clawlens/app.py)
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 _DIST_DIR = _PROJECT_ROOT / "web" / "dist"
 
-app = FastAPI(title="ClawHawk")
+app = FastAPI(title="ClawLens")
 
 
 def _setup_static_files() -> None:
@@ -130,7 +130,7 @@ async def spa_fallback(request: Request, full_path: str) -> FileResponse:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="ClawHawk dashboard server")
+    parser = argparse.ArgumentParser(description="ClawLens dashboard server")
     parser.add_argument("--port", type=int, default=3333)
     args = parser.parse_args()
     uvicorn.run(app, host="0.0.0.0", port=args.port)

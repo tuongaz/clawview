@@ -1,17 +1,12 @@
-import { lazy, Suspense } from 'react'
 import { useParams, Outlet, Link } from 'react-router-dom'
 import { Brain } from 'lucide-react'
-import { Chip, Meter, Spinner, Tabs } from '@heroui/react'
+import { Chip, Meter, Spinner } from '@heroui/react'
 import { useSessionDetail } from '../hooks/useSessionDetail'
 import { StatusIndicator } from '../components/StatusIndicator'
 import { Header } from '../components/Header'
 import { SectionCard, MetadataField, ErrorAlert, EmptyState, ThemedChip } from '../components/ui'
 import { ConversationTimeline, StatBox, SkillsSubagentsSection, ToolUsageSection } from '../components/session'
 import { timeAgo, formatTokens, formatDuration, contextColor, GitBranchIcon, getClientIcon, ideDeepLink } from '../utils'
-
-const InsightsPanel = lazy(() =>
-  import('../components/insights/InsightsPanel').then(m => ({ default: m.InsightsPanel }))
-)
 
 export function SessionDetailPage() {
   const { sessionId } = useParams<{ sessionId: string }>()
@@ -86,32 +81,13 @@ export function SessionDetailPage() {
       </div>
 
       <div className="px-8 py-6 max-sm:px-4 max-sm:py-4 max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
-        {/* Left: Tabbed Content */}
+        {/* Left: Conversation */}
         <div className="order-2 lg:order-1 min-w-0">
-          <Tabs variant="secondary" className="w-full">
-            <Tabs.ListContainer>
-              <Tabs.List aria-label="Session tabs">
-                <Tabs.Tab id="session">Session<Tabs.Indicator /></Tabs.Tab>
-                <Tabs.Tab id="analyse">Insights<Tabs.Indicator /></Tabs.Tab>
-              </Tabs.List>
-            </Tabs.ListContainer>
-
-            <Tabs.Panel id="session">
-              <div className="mt-4">
-                {detail.turns.length > 0 ? (
-                  <ConversationTimeline turns={detail.turns} isActive={isActive} isWaiting={isWaiting} />
-                ) : (
-                  <EmptyState message="No conversation yet" />
-                )}
-              </div>
-            </Tabs.Panel>
-
-            <Tabs.Panel id="analyse">
-              <Suspense fallback={<div className="flex items-center justify-center py-20"><Spinner size="lg" /></div>}>
-                <InsightsPanel sessionId={sessionId ?? ''} />
-              </Suspense>
-            </Tabs.Panel>
-          </Tabs>
+          {detail.turns.length > 0 ? (
+            <ConversationTimeline turns={detail.turns} isActive={isActive} isWaiting={isWaiting} />
+          ) : (
+            <EmptyState message="No conversation yet" />
+          )}
         </div>
 
         {/* Right: Session Details */}

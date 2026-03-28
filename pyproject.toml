@@ -1,5 +1,5 @@
 [project]
-name = "clawhawk"
+name = "clawlens"
 version = "0.1.0"
 description = "Real-time dashboard for monitoring Claude Code sessions"
 readme = "README.md"
@@ -11,7 +11,7 @@ dependencies = [
 ]
 
 [project.scripts]
-clawhawk = "clawhawk.app:main"
+clawlens = "clawlens.app:main"
 
 [dependency-groups]
 dev = [
@@ -24,4 +24,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/clawhawk"]
+packages = ["src/clawlens"]
+
+[tool.uv.workspace]
+members = ["clawlens"]

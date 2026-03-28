@@ -11,7 +11,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from clawhawk.pricing import calculate_cost
+from clawlens.pricing import calculate_cost
 
 logger = logging.getLogger(__name__)
 
@@ -193,7 +193,7 @@ def compute_project_stats(
 
     Args:
         project_path: The encoded project directory name under ~/.claude/projects/
-                      (e.g. "-Users-tuongaz-dev-clawhawk")
+                      (e.g. "-Users-tuongaz-dev-clawlens")
         timezone_offset_minutes: Client timezone offset in minutes from UTC
 
     Returns:

@@ -11,8 +11,8 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-from clawhawk.ide import load_ide_map
-from clawhawk.models import MemoryFile, Message, ProjectGroup, Session, SessionDetail, Turn, TurnEvent
+from clawlens.ide import load_ide_map
+from clawlens.models import MemoryFile, Message, ProjectGroup, Session, SessionDetail, Turn, TurnEvent
 
 logger = logging.getLogger(__name__)
 

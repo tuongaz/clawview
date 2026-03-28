@@ -7,8 +7,8 @@ from datetime import date, timedelta
 from pathlib import Path
 from unittest.mock import patch
 
-from clawhawk.models import TokenPeriod
-from clawhawk.stats import load_token_stats, parse_file_token_stats
+from clawlens.models import TokenPeriod
+from clawlens.stats import load_token_stats, parse_file_token_stats
 
 
 # ---------------------------------------------------------------------------
@@ -213,14 +213,14 @@ def test_load_token_stats_period_boundaries(tmp_path: Path) -> None:
     )
 
     # Patch glob and clear cache.
-    from clawhawk import stats
+    from clawlens import stats
 
     stats._stats_cache.clear()
 
     files = [str(today_file), str(yesterday_file), str(prev_month_file), str(last_week_file)]
     with (
-        patch("clawhawk.stats.glob.glob", return_value=files),
-        patch("clawhawk.stats.os.path.expanduser", return_value=str(tmp_path)),
+        patch("clawlens.stats.glob.glob", return_value=files),
+        patch("clawlens.stats.os.path.expanduser", return_value=str(tmp_path)),
     ):
         result = load_token_stats()
 

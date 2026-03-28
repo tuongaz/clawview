@@ -1,4 +1,4 @@
-"""Pydantic data models for ClawHawk session data."""
+"""Pydantic data models for ClawLens session data."""
 
 from __future__ import annotations
 

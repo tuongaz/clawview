@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from clawhawk.sessions import (
+from clawlens.sessions import (
     clean_command_text,
     decode_project_path,
     extract_action,

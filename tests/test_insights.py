@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from clawhawk.insights import compute_project_stats
+from clawlens.insights import compute_project_stats
 
 
 # ---------------------------------------------------------------------------

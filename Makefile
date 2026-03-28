@@ -5,12 +5,12 @@ build:
 	uv sync
 
 run: build
-	uv run clawhawk
+	uv run clawlens
 
 dev:
 	@echo "Run in two terminals:"
 	@echo "  Terminal 1: cd frontend && bun run dev"
-	@echo "  Terminal 2: uv run clawhawk"
+	@echo "  Terminal 2: uv run clawlens"
 
 clean:
 	rm -rf web/dist
