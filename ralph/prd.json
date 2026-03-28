@@ -96,7 +96,7 @@
         "`uv run pyright src/clawhawk/` passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Follow the existing adaptive polling pattern — fast ticks when sessions are active, slow ticks when idle. Reference: existing `src/clawhawk/ws.py` for WebSocket patterns to follow."
     },
     {

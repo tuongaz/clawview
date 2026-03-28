@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import asyncio
+import glob
+import json
 import logging
+import os
 
 from fastapi import WebSocket, WebSocketDisconnect
 
+from clawhawk.insights import compute_project_stats
 from clawhawk.models import DashboardMessage, MemoryFile, ProjectGroup, SessionDetail
 from clawhawk.sessions import (
     enrich_session_detail,
@@ -104,8 +108,6 @@ async def session_detail_websocket(ws: WebSocket, session_id: str) -> None:
 
 
 def _serialize_memory_files(files: list[MemoryFile]) -> str:
-    import json
-
     return json.dumps([f.model_dump(by_alias=True) for f in files])
 
 
@@ -134,3 +136,73 @@ async def session_memory_websocket(ws: WebSocket, session_id: str) -> None:
         pass
     except Exception:
         logger.debug("Session memory WebSocket connection closed")
+
+
+def _get_project_dir_for_session(session_id: str) -> str | None:
+    """Resolve a session ID to its encoded project directory name."""
+    fpath = find_session_file(session_id)
+    if fpath is None:
+        return None
+    return os.path.basename(os.path.dirname(fpath))
+
+
+def _get_max_mtime(project_dir_name: str) -> float:
+    """Return the maximum mtime of JSONL files in a project directory."""
+    home = os.path.expanduser("~")
+    pattern = os.path.join(home, ".claude", "projects", project_dir_name, "*.jsonl")
+    max_mtime = 0.0
+    for fpath in glob.glob(pattern):
+        try:
+            mt = os.stat(fpath).st_mtime
+            if mt > max_mtime:
+                max_mtime = mt
+        except OSError:
+            pass
+    return max_mtime
+
+
+async def session_insights_websocket(ws: WebSocket, session_id: str) -> None:
+    """Accept a WebSocket connection and push project insights on change."""
+    await ws.accept()
+
+    last_data: bytes = b""
+    last_mtime: float = 0.0
+
+    try:
+        # Resolve the project directory once
+        project_dir_name = await asyncio.to_thread(
+            _get_project_dir_for_session, session_id
+        )
+        if project_dir_name is None:
+            await ws.send_text('{"error": "Session not found"}')
+            await ws.close()
+            return
+
+        while True:
+            # Check file mtime to avoid unnecessary recomputation
+            current_mtime = await asyncio.to_thread(
+                _get_max_mtime, project_dir_name
+            )
+
+            if current_mtime != last_mtime:
+                stats = await asyncio.to_thread(
+                    compute_project_stats, project_dir_name
+                )
+                data_str = json.dumps(stats)
+                data_bytes = data_str.encode()
+
+                if data_bytes != last_data:
+                    await ws.send_text(data_str)
+                    last_data = data_bytes
+
+                last_mtime = current_mtime
+
+            # Use session activity to determine tick speed
+            detail = await _load_session_detail(session_id)
+            is_active = detail.is_active if detail else False
+            interval = _DETAIL_TICK_FAST if is_active else _DETAIL_TICK_SLOW
+            await asyncio.sleep(interval)
+    except WebSocketDisconnect:
+        pass
+    except Exception:
+        logger.debug("Session insights WebSocket connection closed")

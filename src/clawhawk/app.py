@@ -17,7 +17,12 @@ from clawhawk.sessions import (
     load_skill_content,
     parse_session_detail,
 )
-from clawhawk.ws import session_detail_websocket, session_memory_websocket, websocket_endpoint
+from clawhawk.ws import (
+    session_detail_websocket,
+    session_insights_websocket,
+    session_memory_websocket,
+    websocket_endpoint,
+)
 
 # Resolve web/dist relative to the project root (3 levels up from src/clawhawk/app.py)
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -53,6 +58,11 @@ async def ws_session_detail_route(ws: WebSocket, session_id: str) -> None:
 @app.websocket("/ws/sessions/{session_id}/memory")
 async def ws_session_memory_route(ws: WebSocket, session_id: str) -> None:
     await session_memory_websocket(ws, session_id)
+
+
+@app.websocket("/ws/insights/{session_id}")
+async def ws_insights_route(ws: WebSocket, session_id: str) -> None:
+    await session_insights_websocket(ws, session_id)
 
 
 @app.get("/api/sessions/{session_id}")

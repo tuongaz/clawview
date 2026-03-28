@@ -20,6 +20,9 @@ Started: Sat 28 Mar 2026 19:49:06 AEDT
 - `command_details` is computed first, then `user_interactions` is derived from it
 - Test fixtures for interruptions must use tool_result content (not plain string) to avoid `_is_real_user_prompt()` treating them as commands
 - Use `patch.object(os.path, "expanduser", return_value=str(tmp_path))` to test `compute_project_stats()` with fixture data
+- Session → project dir: `find_session_file(sid)` → `os.path.basename(os.path.dirname(fpath))` gives encoded project dir name
+- `compute_project_stats()` returns plain dicts, serialize with `json.dumps()` (not Pydantic)
+- WS endpoints reuse `_load_session_detail()` for activity-based tick speed
 
 ---
 
@@ -72,4 +75,21 @@ Started: Sat 28 Mar 2026 19:49:06 AEDT
   - Use `patch.object(os.path, "expanduser", ...)` to redirect `compute_project_stats()` to tmp_path fixtures
   - Tool error attribution goes to the LAST tool in the preceding assistant message — important when assistant calls multiple tools
   - `compute_project_stats()` sorts all messages globally by timestamp, so multi-session fixtures interleave chronologically
+---
+
+## 2026-03-28 - US-005
+- Added `/ws/insights/{sessionId}` WebSocket endpoint in `src/clawhawk/ws.py`
+- Resolves session ID → encoded project directory name, then calls `compute_project_stats()`
+- Uses file mtime change detection to avoid unnecessary recomputation
+- Follows existing adaptive polling pattern (fast tick when session active, slow tick when idle)
+- Sends initial payload on connect, pushes updates only when data changes
+- Graceful disconnection handling (WebSocketDisconnect)
+- Registered route in `src/clawhawk/app.py`
+- Files changed: `src/clawhawk/ws.py`, `src/clawhawk/app.py`, `ralph/prd.json`, `ralph/progress.txt`
+- **Learnings for future iterations:**
+  - Session → project resolution: `find_session_file()` returns JSONL path, `os.path.basename(os.path.dirname(fpath))` gives encoded project dir name
+  - Mtime-based change detection: glob JSONL files, track max mtime, skip recomputation when unchanged
+  - `compute_project_stats()` returns plain dicts (not Pydantic models), so use `json.dumps()` not `model_dump_json()`
+  - The `_load_session_detail()` helper is reused across WS endpoints for activity checks
+  - json import was moved to top-level in ws.py (was previously local in `_serialize_memory_files`)
 ---
