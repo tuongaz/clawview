@@ -14,6 +14,7 @@ import { CommandLengthChart } from './CommandLengthChart'
 import { ToolTrendsChart } from './ToolTrendsChart'
 import { InterruptionRateChart } from './InterruptionRateChart'
 import { ErrorRateChart } from './ErrorRateChart'
+import { CommandsTable } from './CommandsTable'
 
 interface InsightsPanelProps {
   sessionId: string
@@ -66,6 +67,8 @@ export function InsightsPanel({ sessionId }: InsightsPanelProps) {
           errorDetails={insights.errors.details}
         />
       </div>
+
+      <CommandsTable commandDetails={insights.command_details} />
     </div>
   )
 }

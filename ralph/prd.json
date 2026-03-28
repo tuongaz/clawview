@@ -241,7 +241,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 12,
-      "passes": false,
+      "passes": true,
       "notes": "Use HeroUI Table component if available, otherwise build with standard HTML table. Full-width layout below charts. Reference: `sniffly/sniffly-site/` for data table patterns with search, filter, and sort."
     },
     {

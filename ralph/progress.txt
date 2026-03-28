@@ -206,3 +206,24 @@ Started: Sat 28 Mar 2026 19:49:06 AEDT
   - Error details (`errors.details`) have their own timestamps independent of command timestamps — the `bucketCommandsAndErrors` function handles alignment
   - Manual browser verification needed (no browser testing tools available in this iteration)
 ---
+
+## 2026-03-28 - US-012
+- Created `CommandsTable.tsx` — full-featured data table for browsing individual commands
+- Columns: Command (with timestamp), Model, Steps, Tools count, Tokens, Status (interrupted/complete badge)
+- Text search filtering by message content
+- Interrupt filter buttons (All / Interrupted / Not Interrupted)
+- Sortable columns (click header to toggle asc/desc)
+- Pagination with 25 rows per page, prev/next navigation
+- Expandable rows showing full message text and tool names as chips
+- Real-time updates from WebSocket data (stateless component re-renders with new props)
+- Integrated into InsightsPanel below the dynamic charts section
+- Updated barrel export in index.ts
+- Files changed: `frontend/src/components/insights/CommandsTable.tsx`, `frontend/src/components/insights/InsightsPanel.tsx`, `frontend/src/components/insights/index.ts`, `ralph/prd.json`, `ralph/progress.txt`
+- **Learnings for future iterations:**
+  - Built with plain HTML table + React state — no HeroUI Table needed; keeps the component self-contained and matches the dark theme using CSS variables
+  - Table sorting resets to page 0 to avoid stale pagination state
+  - Expandable rows use a `<>` fragment with two `<tr>` elements (main row + detail row) — Recharts components are not needed here
+  - Tool name chips use purple palette (`#a78bfa` / `rgba(118,75,162,...)`) consistent with the model usage chart
+  - `lucide-react` icons (Search, ChevronUp/Down/Left/Right) are already available in the project — no new dependencies needed
+  - Manual browser verification needed (no browser testing tools available in this iteration)
+---
