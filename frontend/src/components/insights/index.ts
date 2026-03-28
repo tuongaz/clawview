@@ -1,2 +1,7 @@
 export { InsightsPanel } from './InsightsPanel'
 export { StatCards } from './StatCards'
+export { ChartCard } from './ChartCard'
+export { ToolUsageChart } from './ToolUsageChart'
+export { HourlyTokenChart } from './HourlyTokenChart'
+export { CommandAnalysisChart } from './CommandAnalysisChart'
+export { ModelUsageChart } from './ModelUsageChart'

@@ -161,7 +161,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": "Use Recharts consistently for all charts. Tree-shake imports — only import needed chart types (BarChart, PieChart, etc.). Reference: `sniffly/sniffly-site/` for chart component patterns, color schemes, and responsive chart layout."
     },
     {

@@ -25,6 +25,9 @@ Started: Sat 28 Mar 2026 19:49:06 AEDT
 - WS endpoints reuse `_load_session_detail()` for activity-based tick speed
 - Insights components live in `frontend/src/components/insights/` with barrel export via `index.ts`
 - Total project cost = `sum(daily_stats[date].cost for date in daily_stats)` — no top-level cost field exists
+- Recharts charts: wrap in `<ChartCard title="...">` → `<ResponsiveContainer>` → chart component; use tree-shaken imports
+- Chart color palette: `#667eea` (blue), `#764ba2` (purple), `#48bb78` (green), `#ef4444` (red), `#f59e0b` (orange), `#ed8936` (amber)
+- Chart tooltip styling: `contentStyle={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12 }}`
 
 ---
 
@@ -126,4 +129,27 @@ Started: Sat 28 Mar 2026 19:49:06 AEDT
   - `useInsights` hook returns project-level stats (all sessions in the project), not single-session stats
   - `InsightsPanel` connects its own WebSocket when rendered — no lazy loading needed yet (US-013 will add that)
   - The grid uses `sm:grid-cols-2 xl:grid-cols-3` for responsive stat cards — matches the 3x2 desktop / stack mobile requirement
+---
+
+## 2026-03-28 - US-008
+- Installed Recharts (`recharts@3.8.1`) as charting library
+- Created 5 new components in `frontend/src/components/insights/`:
+  - `ChartCard.tsx` — reusable chart container with title
+  - `ToolUsageChart.tsx` — horizontal bar chart, top 10 tools by usage count
+  - `HourlyTokenChart.tsx` — stacked bar chart, input/output tokens by hour (0-23)
+  - `CommandAnalysisChart.tsx` — bar chart, % of commands using N tools
+  - `ModelUsageChart.tsx` — doughnut/pie chart, token distribution by model
+- Integrated all 4 charts into InsightsPanel in a 2-column responsive grid
+- Updated barrel export in `index.ts`
+- Files changed: `frontend/package.json`, `frontend/bun.lock`, `frontend/src/components/insights/ChartCard.tsx`, `frontend/src/components/insights/ToolUsageChart.tsx`, `frontend/src/components/insights/HourlyTokenChart.tsx`, `frontend/src/components/insights/CommandAnalysisChart.tsx`, `frontend/src/components/insights/ModelUsageChart.tsx`, `frontend/src/components/insights/InsightsPanel.tsx`, `frontend/src/components/insights/index.ts`, `ralph/prd.json`, `ralph/progress.txt`
+- **Learnings for future iterations:**
+  - Recharts tree-shakes well: import only `BarChart`, `PieChart`, `Bar`, `Pie`, `Cell`, `XAxis`, `YAxis`, `Tooltip`, `ResponsiveContainer`, `Legend` etc. — no need for a full import
+  - ChartCard is a reusable wrapper — use it for all future chart components (US-009, US-010, US-011)
+  - Recharts `ResponsiveContainer` must have a parent with defined height; the ChartCard provides this via padding
+  - For horizontal bar charts, use `layout="vertical"` on `BarChart` and swap XAxis/YAxis type props
+  - Model names are long — `shortenModel()` utility strips the `claude-` prefix and date suffix for chart labels
+  - ClawHawk color palette for charts: `#667eea` (blue), `#764ba2` (purple), `#48bb78` (green), `#ef4444` (red), `#f59e0b` (orange), `#ed8936` (amber)
+  - Tooltip styling: use `contentStyle` with `var(--bg-primary)` and `var(--border)` to match dark theme
+  - Charts grid uses `lg:grid-cols-2` for desktop, stacking on mobile — separate from stat cards grid
+  - Manual browser verification needed (no browser testing tools available in this iteration)
 ---
