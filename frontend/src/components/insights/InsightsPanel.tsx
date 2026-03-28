@@ -6,6 +6,9 @@ import { ToolUsageChart } from './ToolUsageChart'
 import { HourlyTokenChart } from './HourlyTokenChart'
 import { CommandAnalysisChart } from './CommandAnalysisChart'
 import { ModelUsageChart } from './ModelUsageChart'
+import { ErrorDistributionChart } from './ErrorDistributionChart'
+import { TokenOverTimeChart } from './TokenOverTimeChart'
+import { DailyCostChart } from './DailyCostChart'
 
 interface InsightsPanelProps {
   sessionId: string
@@ -43,6 +46,9 @@ export function InsightsPanel({ sessionId }: InsightsPanelProps) {
         <HourlyTokenChart hourlyPattern={insights.hourly_pattern} />
         <CommandAnalysisChart userInteractions={insights.user_interactions} />
         <ModelUsageChart userInteractions={insights.user_interactions} />
+        <ErrorDistributionChart errors={insights.errors} />
+        <TokenOverTimeChart dailyStats={insights.daily_stats} />
+        <DailyCostChart dailyStats={insights.daily_stats} />
       </div>
     </div>
   )

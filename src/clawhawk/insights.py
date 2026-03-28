@@ -554,6 +554,9 @@ def _compute_daily_stats(
     result: dict[str, Any] = {}
     for date_key, data in sorted(daily.items()):
         total_cost = 0.0
+        input_cost = 0.0
+        output_cost = 0.0
+        cache_cost = 0.0
         for model, token_counts in data["models"].items():
             cost = calculate_cost(
                 model=model,
@@ -563,12 +566,20 @@ def _compute_daily_stats(
                 cache_read_tokens=token_counts.get("cache_read", 0),
             )
             total_cost += cost["total_cost"]
+            input_cost += cost["input_cost"]
+            output_cost += cost["output_cost"]
+            cache_cost += cost["cache_creation_cost"] + cost["cache_read_cost"]
 
         result[date_key] = {
             "messages": data["messages"],
             "sessions": len(data["sessions"]),
             "tokens": dict(data["tokens"]),
             "cost": total_cost,
+            "cost_breakdown": {
+                "input": round(input_cost, 6),
+                "output": round(output_cost, 6),
+                "cache": round(cache_cost, 6),
+            },
         }
 
     return result

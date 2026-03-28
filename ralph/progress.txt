@@ -28,6 +28,7 @@ Started: Sat 28 Mar 2026 19:49:06 AEDT
 - Recharts charts: wrap in `<ChartCard title="...">` → `<ResponsiveContainer>` → chart component; use tree-shaken imports
 - Chart color palette: `#667eea` (blue), `#764ba2` (purple), `#48bb78` (green), `#ef4444` (red), `#f59e0b` (orange), `#ed8936` (amber)
 - Chart tooltip styling: `contentStyle={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12 }}`
+- `daily_stats[date].cost_breakdown` has `input`, `output`, `cache` (USD) for stacked cost charts; `cost` is the total
 
 ---
 
@@ -151,5 +152,20 @@ Started: Sat 28 Mar 2026 19:49:06 AEDT
   - ClawHawk color palette for charts: `#667eea` (blue), `#764ba2` (purple), `#48bb78` (green), `#ef4444` (red), `#f59e0b` (orange), `#ed8936` (amber)
   - Tooltip styling: use `contentStyle` with `var(--bg-primary)` and `var(--border)` to match dark theme
   - Charts grid uses `lg:grid-cols-2` for desktop, stacking on mobile — separate from stat cards grid
+  - Manual browser verification needed (no browser testing tools available in this iteration)
+---
+
+## 2026-03-28 - US-009
+- Created 3 new chart components: ErrorDistributionChart (doughnut/pie), TokenOverTimeChart (stacked bar), DailyCostChart (stacked bar)
+- Added `cost_breakdown` field to backend daily_stats (input/output/cache cost) and updated DailyStatEntry TypeScript type
+- Integrated all 7 static charts into InsightsPanel in a 2-column responsive grid
+- Updated barrel export in index.ts
+- Files changed: `src/clawhawk/insights.py`, `frontend/src/types.ts`, `frontend/src/components/insights/ErrorDistributionChart.tsx`, `frontend/src/components/insights/TokenOverTimeChart.tsx`, `frontend/src/components/insights/DailyCostChart.tsx`, `frontend/src/components/insights/InsightsPanel.tsx`, `frontend/src/components/insights/index.ts`, `ralph/prd.json`, `ralph/progress.txt`
+- **Learnings for future iterations:**
+  - Backend daily_stats originally only had total cost; added `cost_breakdown` with input/output/cache for the stacked cost chart
+  - Error distribution uses 14 colors (one per error category) since there are 14 error categories
+  - TokenOverTimeChart groups input+cache_creation+cache_read as "Input" and output as "Output" for cleaner stacking
+  - DailyCostChart uses optional chaining `entry.cost_breakdown?.input ?? 0` for backward compat with data before the breakdown was added
+  - All chart components follow the same pattern: filter empty data → return null, otherwise render ChartCard wrapping ResponsiveContainer
   - Manual browser verification needed (no browser testing tools available in this iteration)
 ---

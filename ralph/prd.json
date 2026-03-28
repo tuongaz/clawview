@@ -180,7 +180,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": "These complete the static charts section. After this story, all 7 static charts should render in InsightsPanel. Reference: `sniffly/sniffly-site/` for chart component patterns."
     },
     {

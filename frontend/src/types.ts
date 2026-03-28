@@ -110,11 +110,18 @@ export interface InsightsSessions {
   sessions_with_errors: number
 }
 
+export interface DailyCostBreakdown {
+  input: number
+  output: number
+  cache: number
+}
+
 export interface DailyStatEntry {
   messages: number
   sessions: number
   tokens: Record<string, number>
   cost: number
+  cost_breakdown: DailyCostBreakdown
 }
 
 export interface HourlyTokens {
