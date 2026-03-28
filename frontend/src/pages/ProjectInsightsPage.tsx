@@ -1,6 +1,6 @@
 import { useMemo, Suspense, lazy } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { Spinner } from '@heroui/react'
+import { Skeleton } from '@heroui/react'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { Header } from '../components/Header'
 import { EmptyState } from '../components/ui'
@@ -45,7 +45,26 @@ export function ProjectInsightsPage() {
         </div>
 
         {sessionId ? (
-          <Suspense fallback={<div className="flex items-center justify-center py-20"><Spinner size="lg" /></div>}>
+          <Suspense fallback={
+            <div className="mt-4 space-y-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                {Array.from({ length: 5 }, (_, i) => (
+                  <div key={i} className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-4 py-3 flex flex-col gap-2">
+                    <Skeleton className="w-20 h-3 rounded" />
+                    <Skeleton className="w-16 h-6 rounded" />
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {Array.from({ length: 4 }, (_, i) => (
+                  <div key={i} className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg p-4 flex flex-col gap-3">
+                    <Skeleton className="w-32 h-4 rounded" />
+                    <Skeleton className="w-full h-48 rounded" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          }>
             <InsightsPanel sessionId={sessionId} />
           </Suspense>
         ) : (

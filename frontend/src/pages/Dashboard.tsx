@@ -29,16 +29,22 @@ function SessionCardSkeleton() {
 
 function DashboardSkeleton() {
   return (
-    <div className="flex flex-col gap-7">
+    <div className="flex flex-col gap-13">
       {[0, 1].map((i) => (
-        <div key={i} className="p-5">
-          <div className="flex items-center gap-3 pb-4">
+        <div key={i}>
+          <div className="flex items-center gap-3 bg-[var(--bg-secondary)] rounded-lg px-4 py-3">
             <Skeleton className="w-2 h-2 rounded-full" />
-            <Skeleton className="w-32 h-5 rounded" />
-            <Skeleton className="w-48 h-4 rounded" />
-            <Skeleton className="ml-auto w-24 h-4 rounded" />
+            <div className="flex flex-col gap-1">
+              <Skeleton className="w-32 h-5 rounded" />
+              <Skeleton className="w-48 h-3 rounded" />
+            </div>
+            <div className="flex items-center gap-3 ml-auto">
+              <Skeleton className="w-24 h-4 rounded" />
+              <Skeleton className="w-20 h-7 rounded" />
+              <Skeleton className="w-16 h-7 rounded" />
+            </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-3 pt-3 px-4">
             {Array.from({ length: i === 0 ? 3 : 2 }, (_, j) => (
               <SessionCardSkeleton key={j} />
             ))}
