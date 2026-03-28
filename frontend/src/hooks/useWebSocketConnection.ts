@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef } from 'react'
 
 interface UseWebSocketConnectionOptions<T> {
   onMessage: (data: T) => void
@@ -15,45 +15,49 @@ export function useWebSocketConnection<T>(
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const mountedRef = useRef(true)
   const optionsRef = useRef(options)
-  optionsRef.current = options
+  const connectRef = useRef<() => void>(() => {})
 
-  const connect = useCallback(() => {
-    if (!mountedRef.current) return
+  useEffect(() => {
+    optionsRef.current = options
+  })
 
-    const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const ws = new WebSocket(`${protocol}//${location.host}${path}`)
-    wsRef.current = ws
+  useEffect(() => {
+    connectRef.current = () => {
+      if (!mountedRef.current) return
 
-    ws.onopen = () => {
-      backoffRef.current = 1000
-      optionsRef.current.onOpen?.()
-    }
+      const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
+      const ws = new WebSocket(`${protocol}//${location.host}${path}`)
+      wsRef.current = ws
 
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data) as T
-        optionsRef.current.onMessage(data)
-      } catch {
-        // ignore malformed messages
+      ws.onopen = () => {
+        backoffRef.current = 1000
+        optionsRef.current.onOpen?.()
+      }
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data) as T
+          optionsRef.current.onMessage(data)
+        } catch {
+          // ignore malformed messages
+        }
+      }
+
+      ws.onclose = () => {
+        wsRef.current = null
+        if (!mountedRef.current) return
+        const delay = backoffRef.current
+        backoffRef.current = Math.min(backoffRef.current * 2, 10000)
+        reconnectTimerRef.current = setTimeout(() => connectRef.current(), delay)
+      }
+
+      ws.onerror = () => {
+        ws.close()
       }
     }
 
-    ws.onclose = () => {
-      wsRef.current = null
-      if (!mountedRef.current) return
-      const delay = backoffRef.current
-      backoffRef.current = Math.min(backoffRef.current * 2, 10000)
-      reconnectTimerRef.current = setTimeout(connect, delay)
-    }
-
-    ws.onerror = () => {
-      ws.close()
-    }
-  }, [path])
-
-  useEffect(() => {
     mountedRef.current = true
-    connect()
+    connectRef.current()
 
     return () => {
       mountedRef.current = false
@@ -64,5 +68,5 @@ export function useWebSocketConnection<T>(
         wsRef.current.close()
       }
     }
-  }, [connect])
+  }, [path])
 }
