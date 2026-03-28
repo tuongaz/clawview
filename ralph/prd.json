@@ -261,7 +261,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 13,
-      "passes": false,
+      "passes": true,
       "notes": "This is the final integration story. Use React.lazy() or dynamic import for the InsightsPanel to avoid bloating the initial Session tab bundle."
     }
   ]

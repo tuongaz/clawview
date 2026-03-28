@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { useParams, Outlet, Link } from 'react-router-dom'
 import { Brain } from 'lucide-react'
 import { Chip, Meter, Spinner, Tabs } from '@heroui/react'
@@ -6,8 +7,11 @@ import { StatusIndicator } from '../components/StatusIndicator'
 import { Header } from '../components/Header'
 import { SectionCard, MetadataField, ErrorAlert, EmptyState, ThemedChip } from '../components/ui'
 import { ConversationTimeline, StatBox, SkillsSubagentsSection, ToolUsageSection } from '../components/session'
-import { InsightsPanel } from '../components/insights'
 import { timeAgo, formatTokens, formatDuration, contextColor, GitBranchIcon, getClientIcon, ideDeepLink } from '../utils'
+
+const InsightsPanel = lazy(() =>
+  import('../components/insights/InsightsPanel').then(m => ({ default: m.InsightsPanel }))
+)
 
 export function SessionDetailPage() {
   const { sessionId } = useParams<{ sessionId: string }>()
@@ -103,7 +107,9 @@ export function SessionDetailPage() {
             </Tabs.Panel>
 
             <Tabs.Panel id="analyse">
-              <InsightsPanel sessionId={sessionId ?? ''} />
+              <Suspense fallback={<div className="flex items-center justify-center py-20"><Spinner size="lg" /></div>}>
+                <InsightsPanel sessionId={sessionId ?? ''} />
+              </Suspense>
             </Tabs.Panel>
           </Tabs>
         </div>

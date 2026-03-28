@@ -33,6 +33,7 @@ Started: Sat 28 Mar 2026 19:49:06 AEDT
 - Line charts use cumulative averages (running total ÷ total commands), not per-bucket averages
 - Recharts `type="monotone"` provides smooth curves; `dot={false}` + `activeDot={{ r: 4 }}` for clean lines with hover dots
 - Dual-axis line charts: use `yAxisId="pct"` (left, `unit="%"`) + `yAxisId="count"` (right, `orientation="right"`) for rate charts combining percentages and counts
+- For lazy-loaded components with named exports: `lazy(() => import('...').then(m => ({ default: m.Name })))` — import from component file, not barrel
 
 ---
 
@@ -225,5 +226,18 @@ Started: Sat 28 Mar 2026 19:49:06 AEDT
   - Expandable rows use a `<>` fragment with two `<tr>` elements (main row + detail row) — Recharts components are not needed here
   - Tool name chips use purple palette (`#a78bfa` / `rgba(118,75,162,...)`) consistent with the model usage chart
   - `lucide-react` icons (Search, ChevronUp/Down/Left/Right) are already available in the project — no new dependencies needed
+  - Manual browser verification needed (no browser testing tools available in this iteration)
+---
+
+## 2026-03-28 - US-013
+- Added `React.lazy()` dynamic import for InsightsPanel in SessionDetailPage for code splitting
+- Wrapped InsightsPanel in `<Suspense>` with Spinner fallback for loading state
+- Removed direct import of InsightsPanel from barrel export; lazy import points to the component file directly
+- HeroUI Tabs.Panel already unmounts inactive panels, so WebSocket only connects when Insights tab is active
+- Files changed: `frontend/src/pages/SessionDetailPage.tsx`, `ralph/prd.json`, `ralph/progress.txt`
+- **Learnings for future iterations:**
+  - HeroUI Tabs (React Aria) unmounts inactive `Tabs.Panel` children — no extra state management needed for conditional rendering
+  - `React.lazy()` with named exports uses `.then(m => ({ default: m.ComponentName }))` pattern
+  - Import directly from component file (not barrel) for lazy loading — barrel imports defeat code splitting
   - Manual browser verification needed (no browser testing tools available in this iteration)
 ---
