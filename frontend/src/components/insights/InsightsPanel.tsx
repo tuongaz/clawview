@@ -12,6 +12,8 @@ import { DailyCostChart } from './DailyCostChart'
 import { CommandComplexityChart } from './CommandComplexityChart'
 import { CommandLengthChart } from './CommandLengthChart'
 import { ToolTrendsChart } from './ToolTrendsChart'
+import { InterruptionRateChart } from './InterruptionRateChart'
+import { ErrorRateChart } from './ErrorRateChart'
 
 interface InsightsPanelProps {
   sessionId: string
@@ -58,6 +60,11 @@ export function InsightsPanel({ sessionId }: InsightsPanelProps) {
         <CommandComplexityChart commandDetails={insights.command_details} />
         <CommandLengthChart commandDetails={insights.command_details} />
         <ToolTrendsChart commandDetails={insights.command_details} />
+        <InterruptionRateChart commandDetails={insights.command_details} />
+        <ErrorRateChart
+          commandDetails={insights.command_details}
+          errorDetails={insights.errors.details}
+        />
       </div>
     </div>
   )
