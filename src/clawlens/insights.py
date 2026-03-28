@@ -226,6 +226,7 @@ def compute_project_stats(
     command_details = _compute_command_details(messages, timezone_offset_minutes)
     user_interactions = _compute_user_interaction_stats(command_details)
     cache = _compute_cache_stats(messages)
+    advanced_tools = _compute_advanced_tool_stats(messages)
 
     return {
         "overview": overview,
@@ -238,6 +239,7 @@ def compute_project_stats(
         "user_interactions": user_interactions,
         "cache": cache,
         "command_details": command_details,
+        "advanced_tools": advanced_tools,
     }
 
 
@@ -304,6 +306,16 @@ def _empty_stats() -> dict[str, Any]:
             "roi": 0.0,
         },
         "command_details": [],
+        "advanced_tools": {
+            "tool_categories": {},
+            "subagent_usage": {},
+            "skill_usage": {},
+            "mcp_server_usage": {},
+            "automation_score": 0.0,
+            "search_edit_ratio": {"search": 0, "modification": 0, "ratio": 0.0},
+            "cost_per_command": 0.0,
+            "total_tool_calls": 0,
+        },
     }
 
 
@@ -854,4 +866,179 @@ def _compute_cache_stats(messages: list[dict[str, Any]]) -> dict[str, Any]:
         "cost_saved": cost_saved,
         "break_even": break_even,
         "roi": roi,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Advanced tool analytics
+# ---------------------------------------------------------------------------
+
+TOOL_CATEGORIES: dict[str, list[str]] = {
+    "Search": ["Grep", "Glob", "LS"],
+    "File I/O": ["Read", "Write", "Edit", "NotebookEdit"],
+    "Shell": ["Bash"],
+    "AI Delegation": ["Agent", "Skill"],
+    "Task Management": ["TaskCreate", "TaskUpdate", "TaskGet", "TaskList", "TaskStop", "TaskOutput", "TodoWrite"],
+    "Planning": ["EnterPlanMode", "ExitPlanMode"],
+    "Web": ["WebFetch", "WebSearch"],
+    "Communication": ["AskUserQuestion", "SendMessage"],
+}
+
+_TOOL_TO_CATEGORY: dict[str, str] = {}
+for _cat, _tools in TOOL_CATEGORIES.items():
+    for _t in _tools:
+        _TOOL_TO_CATEGORY[_t] = _cat
+
+
+def _categorize_tool(name: str) -> str:
+    """Categorize a tool name into a high-level category."""
+    if name.startswith("mcp__"):
+        return "MCP / External"
+    return _TOOL_TO_CATEGORY.get(name, "Other")
+
+
+def _extract_mcp_server(name: str) -> str | None:
+    """Extract MCP server name from a tool name like mcp__server__tool."""
+    if not name.startswith("mcp__"):
+        return None
+    parts = name.split("__")
+    return parts[1] if len(parts) >= 3 else name
+
+
+def _extract_tool_inputs_from_content(content: object) -> list[dict[str, Any]]:
+    """Extract tool_use entries with name and input from assistant message content."""
+    results: list[dict[str, Any]] = []
+    if not isinstance(content, list):
+        return results
+    for part in content:
+        if isinstance(part, dict) and part.get("type") == "tool_use":
+            results.append({
+                "name": part.get("name", ""),
+                "input": part.get("input", {}),
+            })
+    return results
+
+
+def _compute_advanced_tool_stats(
+    messages: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Compute advanced tool analytics: categories, subagents, skills, MCP servers."""
+    category_counts: dict[str, int] = defaultdict(int)
+    subagent_counts: dict[str, int] = defaultdict(int)
+    skill_counts: dict[str, int] = defaultdict(int)
+    mcp_server_counts: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    total_tool_calls = 0
+    ai_delegation_calls = 0
+    search_calls = 0
+    modification_calls = 0
+
+    search_tools = {"Grep", "Glob", "LS", "Read"}
+    modification_tools = {"Write", "Edit", "NotebookEdit", "Bash"}
+
+    for msg in messages:
+        if msg["type"] != "assistant":
+            continue
+
+        # Extract detailed tool info from raw content
+        tool_details = _extract_tool_inputs_from_content(msg["content"])
+
+        if tool_details:
+            for tool in tool_details:
+                name = tool["name"]
+                tool_input = tool["input"]
+                if not name:
+                    continue
+
+                total_tool_calls += 1
+                category = _categorize_tool(name)
+                category_counts[category] += 1
+
+                if category == "AI Delegation":
+                    ai_delegation_calls += 1
+                if name in search_tools:
+                    search_calls += 1
+                elif name in modification_tools:
+                    modification_calls += 1
+
+                # Extract subagent type from Agent tool
+                if name == "Agent" and isinstance(tool_input, dict):
+                    subagent_type = tool_input.get("subagent_type", "general-purpose")
+                    subagent_counts[subagent_type] += 1
+
+                # Extract skill name from Skill tool
+                if name == "Skill" and isinstance(tool_input, dict):
+                    skill_name = tool_input.get("skill", tool_input.get("name", "unknown"))
+                    skill_counts[skill_name] += 1
+
+                # Extract MCP server and tool
+                if name.startswith("mcp__"):
+                    server = _extract_mcp_server(name)
+                    if server:
+                        parts = name.split("__")
+                        tool_short = parts[2] if len(parts) >= 3 else name
+                        mcp_server_counts[server][tool_short] += 1
+        else:
+            # Fallback: use tool_names list when raw content not available
+            for name in msg["tool_names"]:
+                total_tool_calls += 1
+                category = _categorize_tool(name)
+                category_counts[category] += 1
+
+                if category == "AI Delegation":
+                    ai_delegation_calls += 1
+                if name in search_tools:
+                    search_calls += 1
+                elif name in modification_tools:
+                    modification_calls += 1
+                if name.startswith("mcp__"):
+                    server = _extract_mcp_server(name)
+                    if server:
+                        parts = name.split("__")
+                        tool_short = parts[2] if len(parts) >= 3 else name
+                        mcp_server_counts[server][tool_short] += 1
+
+    automation_score = (
+        ai_delegation_calls / total_tool_calls * 100 if total_tool_calls > 0 else 0.0
+    )
+
+    total_search_mod = search_calls + modification_calls
+    search_ratio = search_calls / total_search_mod * 100 if total_search_mod > 0 else 0.0
+
+    # Cost per command
+    total_commands = sum(
+        1 for m in messages if m["type"] == "user" and m["is_real_prompt"]
+    )
+    total_cost = 0.0
+    model_tokens: dict[str, dict[str, int]] = defaultdict(
+        lambda: {"input": 0, "output": 0, "cache_creation": 0, "cache_read": 0}
+    )
+    for msg in messages:
+        if msg["type"] == "assistant" and msg["model"]:
+            model = msg["model"]
+            for k, v in msg["tokens"].items():
+                model_tokens[model][k] += v
+    for model, tokens in model_tokens.items():
+        cost = calculate_cost(
+            model=model,
+            input_tokens=tokens.get("input", 0),
+            output_tokens=tokens.get("output", 0),
+            cache_creation_tokens=tokens.get("cache_creation", 0),
+            cache_read_tokens=tokens.get("cache_read", 0),
+        )
+        total_cost += cost["total_cost"]
+    cost_per_command = total_cost / total_commands if total_commands > 0 else 0.0
+
+    return {
+        "tool_categories": dict(category_counts),
+        "subagent_usage": dict(subagent_counts),
+        "skill_usage": dict(skill_counts),
+        "mcp_server_usage": {s: dict(t) for s, t in mcp_server_counts.items()},
+        "automation_score": round(automation_score, 1),
+        "search_edit_ratio": {
+            "search": search_calls,
+            "modification": modification_calls,
+            "ratio": round(search_ratio, 1),
+        },
+        "cost_per_command": round(cost_per_command, 4),
+        "total_tool_calls": total_tool_calls,
     }

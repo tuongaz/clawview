@@ -193,6 +193,17 @@ export interface CommandDetail {
   tool_names: string[]
 }
 
+export interface AdvancedToolStats {
+  tool_categories: Record<string, number>
+  subagent_usage: Record<string, number>
+  skill_usage: Record<string, number>
+  mcp_server_usage: Record<string, Record<string, number>>
+  automation_score: number
+  search_edit_ratio: { search: number; modification: number; ratio: number }
+  cost_per_command: number
+  total_tool_calls: number
+}
+
 export interface ProjectInsights {
   overview: InsightsOverview
   tools: InsightsTools
@@ -204,4 +215,5 @@ export interface ProjectInsights {
   user_interactions: InsightsUserInteractions
   cache: InsightsCache
   command_details: CommandDetail[]
+  advanced_tools: AdvancedToolStats
 }

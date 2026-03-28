@@ -128,6 +128,36 @@ export function StatCards({ insights }: StatCardsProps) {
         ]}
         info="Cache read tokens and efficiency metrics. Higher hit rate means more tokens served from cache, reducing cost and latency."
       />
+
+      <StatCard
+        label="Automation Score"
+        value={pct(insights.advanced_tools.automation_score)}
+        details={[
+          `${fmt(insights.advanced_tools.total_tool_calls)} total tool calls`,
+          `${Object.keys(insights.advanced_tools.subagent_usage).length} agent types, ${Object.keys(insights.advanced_tools.skill_usage).length} skills`,
+        ]}
+        info="Percentage of tool calls that are AI delegation (Agent + Skill). Higher scores indicate more agentic, parallelized workflows."
+      />
+
+      <StatCard
+        label="Search / Edit Ratio"
+        value={pct(insights.advanced_tools.search_edit_ratio.ratio)}
+        details={[
+          `${fmt(insights.advanced_tools.search_edit_ratio.search)} search calls`,
+          `${fmt(insights.advanced_tools.search_edit_ratio.modification)} modification calls`,
+        ]}
+        info="Ratio of search/read operations (Grep, Glob, Read) to modification operations (Write, Edit, Bash). Higher ratio means more exploration before changes."
+      />
+
+      <StatCard
+        label="Cost per Command"
+        value={usd(insights.advanced_tools.cost_per_command)}
+        details={[
+          `${ui.real_user_messages} total commands`,
+          `${usd(totalCost)} total cost`,
+        ]}
+        info="Average API cost per user command. Helps identify expensive workflows and optimize usage."
+      />
     </div>
   )
 }

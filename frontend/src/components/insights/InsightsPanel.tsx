@@ -14,7 +14,9 @@ import { CommandLengthChart } from './CommandLengthChart'
 import { ToolTrendsChart } from './ToolTrendsChart'
 import { InterruptionRateChart } from './InterruptionRateChart'
 import { ErrorRateChart } from './ErrorRateChart'
-import { CommandsTable } from './CommandsTable'
+import { ToolCategoryChart } from './ToolCategoryChart'
+import { SubAgentSkillChart } from './SubAgentSkillChart'
+import { McpUsageChart } from './McpUsageChart'
 
 interface InsightsPanelProps {
   sessionId: string
@@ -49,6 +51,7 @@ export function InsightsPanel({ sessionId }: InsightsPanelProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <ToolUsageChart tools={insights.tools} />
+        <ToolCategoryChart advancedTools={insights.advanced_tools} />
         <HourlyTokenChart hourlyPattern={insights.hourly_pattern} />
         <CommandAnalysisChart userInteractions={insights.user_interactions} />
         <ModelUsageChart userInteractions={insights.user_interactions} />
@@ -58,6 +61,8 @@ export function InsightsPanel({ sessionId }: InsightsPanelProps) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <SubAgentSkillChart advancedTools={insights.advanced_tools} />
+        <McpUsageChart advancedTools={insights.advanced_tools} />
         <CommandComplexityChart commandDetails={insights.command_details} />
         <CommandLengthChart commandDetails={insights.command_details} />
         <ToolTrendsChart commandDetails={insights.command_details} />
@@ -67,8 +72,6 @@ export function InsightsPanel({ sessionId }: InsightsPanelProps) {
           errorDetails={insights.errors.details}
         />
       </div>
-
-      <CommandsTable commandDetails={insights.command_details} />
     </div>
   )
 }

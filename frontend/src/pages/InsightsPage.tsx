@@ -19,6 +19,21 @@ export function InsightsPage() {
     return group?.sessions[0]?.sessionId ?? null
   }, [groups, selectedProject])
 
+  // Build display labels, disambiguating duplicate folder names with parent
+  const projectLabels = useMemo(() => {
+    const shortNames = groups.map(g => g.projectName.split('/').pop() || g.projectName)
+    const counts = new Map<string, number>()
+    for (const name of shortNames) counts.set(name, (counts.get(name) || 0) + 1)
+    return groups.map((g, i) => {
+      const short = shortNames[i]
+      if (counts.get(short)! > 1) {
+        const parts = g.projectName.split('/')
+        return parts.length >= 2 ? `${parts[parts.length - 2]}/${short}` : g.projectName
+      }
+      return short
+    })
+  }, [groups])
+
   // Auto-select first project when groups load
   if (!selectedProject && groups.length > 0) {
     setSelectedProject(groups[0].projectName)
@@ -38,9 +53,9 @@ export function InsightsPage() {
               onChange={e => setSelectedProject(e.target.value)}
               className="bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border)] rounded-md px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-[var(--accent-cyan)]"
             >
-              {groups.map(g => (
+              {groups.map((g, i) => (
                 <option key={g.projectName} value={g.projectName}>
-                  {g.projectName.split('/').pop() || g.projectName}
+                  {projectLabels[i]}
                 </option>
               ))}
             </select>

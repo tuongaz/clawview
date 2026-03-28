@@ -50,7 +50,7 @@ function DashboardSkeleton() {
 }
 
 export function Dashboard() {
-  const { groups, stats, connected, loading } = useWebSocket()
+  const { groups, stats, loading } = useWebSocket()
   const [activeOnly, setActiveOnly] = useState(false)
 
   // Build display labels, disambiguating duplicate folder names with parent

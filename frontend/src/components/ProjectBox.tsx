@@ -6,15 +6,11 @@ import { StatusIndicator } from './StatusIndicator'
 
 interface ProjectBoxProps {
   group: ProjectGroup
+  displayName: string
 }
 
-function projectDisplayName(path: string): string {
-  const parts = path.split('/')
-  return parts[parts.length - 1] || path
-}
-
-export function ProjectBox({ group }: ProjectBoxProps) {
-  const name = projectDisplayName(group.projectName)
+export function ProjectBox({ group, displayName }: ProjectBoxProps) {
+  const name = displayName
 
   const activeSessions = group.sessions.filter((s) => s.isActive)
   const idleSessions = group.sessions.filter((s) => !s.isActive)
