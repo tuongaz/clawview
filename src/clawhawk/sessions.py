@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from clawhawk.ide import load_ide_map
-from clawhawk.models import Message, ProjectGroup, Session, SessionDetail, Turn, TurnEvent
+from clawhawk.models import MemoryFile, Message, ProjectGroup, Session, SessionDetail, Turn, TurnEvent
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +44,31 @@ def find_session_file(session_id: str) -> str | None:
     pattern = os.path.join(home, ".claude", "projects", "*", f"{session_id}.jsonl")
     matches = glob.glob(pattern)
     return matches[0] if matches else None
+
+
+def load_memory_files(session_id: str) -> list[MemoryFile]:
+    """Load all .md memory files for the project that owns *session_id*."""
+    fpath = find_session_file(session_id)
+    if fpath is None:
+        return []
+
+    home = os.path.expanduser("~")
+    dir_name = os.path.basename(os.path.dirname(fpath))
+    mem_dir = os.path.join(home, ".claude", "projects", dir_name, "memory")
+
+    results: list[MemoryFile] = []
+    try:
+        for entry in sorted(os.listdir(mem_dir)):
+            full = os.path.join(mem_dir, entry)
+            if entry.endswith(".md") and not os.path.isdir(full):
+                try:
+                    content = Path(full).read_text(encoding="utf-8")
+                    results.append(MemoryFile(name=entry, content=content))
+                except OSError:
+                    pass
+    except OSError:
+        pass
+    return results
 
 
 # ---------------------------------------------------------------------------
@@ -122,36 +147,40 @@ def extract_user_text(content: object) -> str:
 
 
 def _extract_tool_detail(tool_name: str, tool_input: object) -> str:
-    """Extract a short detail string from a tool_use input dict."""
+    """Extract a detail string from a tool_use input dict."""
     if not isinstance(tool_input, dict):
         return ""
 
     if tool_name in ("Read", "Edit", "Write"):
         fp = tool_input.get("file_path")
         if isinstance(fp, str):
-            return truncate(fp, 120)
+            return fp
     elif tool_name == "Bash":
         desc = tool_input.get("description")
         if isinstance(desc, str) and desc:
-            return truncate(desc, 120)
+            return desc
         cmd = tool_input.get("command")
         if isinstance(cmd, str):
-            return truncate(cmd, 120)
+            return cmd
     elif tool_name in ("Grep", "Glob"):
         pat = tool_input.get("pattern")
         if isinstance(pat, str):
-            return truncate(pat, 80)
+            return pat
+    elif tool_name == "Skill":
+        skill = tool_input.get("skill")
+        if isinstance(skill, str):
+            return skill
     elif tool_name == "Agent":
         desc = tool_input.get("description")
         if isinstance(desc, str):
-            return truncate(desc, 120)
+            return desc
     elif tool_name in ("WebSearch", "WebFetch"):
         q = tool_input.get("query")
         if isinstance(q, str):
-            return truncate(q, 120)
+            return q
         u = tool_input.get("url")
         if isinstance(u, str):
-            return truncate(u, 120)
+            return u
 
     return ""
 
@@ -350,6 +379,9 @@ def parse_session_detail(fpath: str) -> SessionDetail | None:
     # Aggregates
     tool_usage: dict[str, int] = {}
     mcp_tool_usage: dict[str, int] = {}
+    skills_used: set[str] = set()
+    subagents_used: set[str] = set()
+    commands_used: set[str] = set()
     total_input = 0
     total_output = 0
     total_cache_creation = 0
@@ -412,6 +444,11 @@ def parse_session_detail(fpath: str) -> SessionDetail | None:
                         if not first_prompt:
                             first_prompt = truncate(text, 120)
                         last_user_prompt = _truncate_keep_newlines(text, 200)
+                        # Detect /command usage
+                        stripped = text.strip()
+                        if stripped.startswith("/"):
+                            cmd = stripped.split()[0]
+                            commands_used.add(cmd)
 
                     # Start a new turn on real user prompts.
                     if _is_real_user_prompt(msg.message.content):
@@ -512,6 +549,23 @@ def parse_session_detail(fpath: str) -> SessionDetail | None:
                                         tool_usage[name] = (
                                             tool_usage.get(name, 0) + 1
                                         )
+                                    # Track skills and subagents
+                                    tool_input = part.get("input")
+                                    if isinstance(tool_input, dict):
+                                        if name == "Skill":
+                                            skill = tool_input.get("skill")
+                                            if isinstance(skill, str) and skill:
+                                                skills_used.add(skill)
+                                        elif name == "Agent":
+                                            label = tool_input.get(
+                                                "subagent_type", ""
+                                            )
+                                            if not label:
+                                                label = tool_input.get(
+                                                    "description", ""
+                                                )
+                                            if isinstance(label, str) and label:
+                                                subagents_used.add(label)
                         # Flush any remaining text after the last tool.
                         if text_parts:
                             combined = "\n\n".join(text_parts)
@@ -549,6 +603,9 @@ def parse_session_detail(fpath: str) -> SessionDetail | None:
         version=version,
         tool_usage=tool_usage,
         mcp_tool_usage=mcp_tool_usage,
+        skills_used=sorted(skills_used),
+        subagents_used=sorted(subagents_used),
+        commands_used=sorted(commands_used),
         total_input_tokens=total_input,
         total_output_tokens=total_output,
         total_cache_creation_tokens=total_cache_creation,

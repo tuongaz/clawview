@@ -16,8 +16,11 @@ export function useWebSocket(): UseWebSocketResult {
   const wsRef = useRef<WebSocket | null>(null)
   const backoffRef = useRef(1000)
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const mountedRef = useRef(true)
 
   const connect = useCallback(() => {
+    if (!mountedRef.current) return
+
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
     const ws = new WebSocket(`${protocol}//${location.host}/ws`)
     wsRef.current = ws
@@ -41,6 +44,7 @@ export function useWebSocket(): UseWebSocketResult {
     ws.onclose = () => {
       setConnected(false)
       wsRef.current = null
+      if (!mountedRef.current) return
       // schedule reconnect with exponential backoff
       const delay = backoffRef.current
       backoffRef.current = Math.min(backoffRef.current * 2, 10000)
@@ -53,9 +57,11 @@ export function useWebSocket(): UseWebSocketResult {
   }, [])
 
   useEffect(() => {
+    mountedRef.current = true
     connect()
 
     return () => {
+      mountedRef.current = false
       if (reconnectTimerRef.current) {
         clearTimeout(reconnectTimerRef.current)
       }

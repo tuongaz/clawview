@@ -5,6 +5,7 @@ import { useWebSocket } from './hooks/useWebSocket'
 import { Header } from './components/Header'
 import { ProjectBox } from './components/ProjectBox'
 import { SessionDetailPage } from './pages/SessionDetailPage'
+import { MemoryPanel } from './components/MemorySidebar'
 import './App.css'
 
 function formatStatTokens(tokens: number): string {
@@ -107,7 +108,9 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Dashboard />} />
-        <Route path="/session/:sessionId" element={<SessionDetailPage />} />
+        <Route path="/session/:sessionId" element={<SessionDetailPage />}>
+          <Route path="memory" element={<MemoryPanel />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   )

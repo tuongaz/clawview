@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useState, useRef, useEffect, useMemo } from 'react'
+import { useParams, Outlet, Link } from 'react-router-dom'
 import Markdown from 'react-markdown'
 import remarkBreaks from 'remark-breaks'
 import remarkGfm from 'remark-gfm'
@@ -57,6 +57,7 @@ export function SessionDetailPage() {
   return (
     <div className="w-full min-h-screen">
       <Header />
+      <Outlet />
 
       {/* Two-column layout */}
       <div className="px-8 py-6 max-sm:px-4 max-sm:py-4 max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
@@ -144,9 +145,16 @@ export function SessionDetailPage() {
             {detail.usesMemory && (
               <div>
                 <span className="text-[var(--text-secondary)] text-xs block mb-1">Memory</span>
-                <Chip size="sm" variant="soft" color="accent" className="font-mono text-[10px] text-[var(--accent-magenta)] bg-[rgba(188,140,255,0.1)] border border-[rgba(188,140,255,0.2)] gap-1">
-                  <Brain size={12} /> Memory Enabled
-                </Chip>
+                <Link to={`/session/${detail.sessionId}/memory`}>
+                  <Chip
+                    size="sm"
+                    variant="soft"
+                    color="accent"
+                    className="font-mono text-[10px] text-[var(--accent-magenta)] bg-[rgba(188,140,255,0.1)] border border-[rgba(188,140,255,0.2)] gap-1 cursor-pointer hover:bg-[rgba(188,140,255,0.2)] hover:border-[rgba(188,140,255,0.4)] transition-all"
+                  >
+                    <Brain size={12} /> Memory Enabled
+                  </Chip>
+                </Link>
               </div>
             )}
 
@@ -184,6 +192,9 @@ export function SessionDetailPage() {
             <StatBox label="Duration" value={formatDuration(detail.totalDurationMs)} />
             <StatBox label="Turns" value={String(detail.turnCount)} />
           </div>
+
+          {/* Commands, Skills & Subagents */}
+          <SkillsSubagentsSection commandsUsed={detail.commandsUsed} skillsUsed={detail.skillsUsed} subagentsUsed={detail.subagentsUsed} />
 
           {/* Tool Usage */}
           <ToolUsageSection toolUsage={detail.toolUsage} mcpToolUsage={detail.mcpToolUsage} />
@@ -299,8 +310,8 @@ function TurnCard({ turn }: { turn: Turn }) {
       </div>
 
       {turn.userPrompt && (
-        <div className="text-sm text-[var(--text-primary)] mb-2 prose prose-invert prose-sm max-w-none break-words">
-          <Markdown remarkPlugins={[remarkGfm, remarkBreaks]}>{turn.userPrompt}</Markdown>
+        <div className="text-sm text-[var(--text-primary)] mb-2 break-words">
+          <TaskNotificationContent text={turn.userPrompt} />
         </div>
       )}
 
@@ -318,12 +329,123 @@ function TurnCard({ turn }: { turn: Turn }) {
             ) : (
               <div key={i} className="flex gap-1.5 text-sm text-[var(--text-primary)] break-words">
                 <span className="flex items-center shrink-0 h-[1.5em] leading-[1.5em]"><span className="w-1.5 h-1.5 rounded-full bg-[var(--text-secondary)]" /></span>
-                <div className="prose prose-invert prose-sm max-w-none min-w-0">
-                  <Markdown remarkPlugins={[remarkGfm, remarkBreaks]}>{ev.text}</Markdown>
-                </div>
+                <TaskNotificationContent text={ev.text} />
               </div>
             )
           )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function parseTaskNotification(text: string): { before: string; summary: string; result: string; after: string } | null {
+  const tnMatch = text.match(/<task-notification>([\s\S]*?)<\/task-notification>/)
+  if (!tnMatch) return null
+  const inner = tnMatch[1]
+  const summaryMatch = inner.match(/<summary>([\s\S]*?)<\/summary>/)
+  const resultMatch = inner.match(/<result>([\s\S]*?)<\/result>/)
+  if (!summaryMatch) return null
+  const before = text.slice(0, tnMatch.index!)
+  const after = text.slice(tnMatch.index! + tnMatch[0].length)
+  return {
+    before: before.trim(),
+    summary: summaryMatch[1].trim(),
+    result: resultMatch ? resultMatch[1].trim() : '',
+    after: after.trim(),
+  }
+}
+
+function TaskNotificationContent({ text }: { text: string }) {
+  const parsed = useMemo(() => parseTaskNotification(text), [text])
+  const [showResult, setShowResult] = useState(false)
+
+  const mdClass = "prose prose-invert prose-sm max-w-none min-w-0"
+
+  if (!parsed) {
+    return (
+      <div className={mdClass}>
+        <Markdown remarkPlugins={[remarkGfm, remarkBreaks]}>{text}</Markdown>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-w-0">
+      {parsed.before && (
+        <div className={`${mdClass} mb-1`}>
+          <Markdown remarkPlugins={[remarkGfm, remarkBreaks]}>{parsed.before}</Markdown>
+        </div>
+      )}
+      <div className={mdClass}>
+        <Markdown remarkPlugins={[remarkGfm, remarkBreaks]}>{parsed.summary}</Markdown>
+      </div>
+      {parsed.result && (
+        <>
+          <button
+            onClick={() => setShowResult(!showResult)}
+            className="mt-1 text-xs text-[var(--accent-cyan)] hover:underline cursor-pointer bg-transparent border-none p-0"
+          >
+            {showResult ? 'Hide details' : 'Show details'}
+          </button>
+          {showResult && (
+            <div className={`${mdClass} mt-1 text-[var(--text-secondary)]`}>
+              <Markdown remarkPlugins={[remarkGfm, remarkBreaks]}>{parsed.result}</Markdown>
+            </div>
+          )}
+        </>
+      )}
+      {parsed.after && !/Full transcript available at/i.test(parsed.after) && (
+        <div className={`${mdClass} mt-1`}>
+          <Markdown remarkPlugins={[remarkGfm, remarkBreaks]}>{parsed.after}</Markdown>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function SkillsSubagentsSection({ commandsUsed, skillsUsed, subagentsUsed }: { commandsUsed: string[]; skillsUsed: string[]; subagentsUsed: string[] }) {
+  const hasCommands = commandsUsed && commandsUsed.length > 0
+  const hasSkills = skillsUsed && skillsUsed.length > 0
+  const hasSubagents = subagentsUsed && subagentsUsed.length > 0
+  if (!hasCommands && !hasSkills && !hasSubagents) return null
+
+  return (
+    <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg p-4 space-y-3">
+      {hasCommands && (
+        <div>
+          <h3 className="text-sm font-semibold text-[var(--text-bright)] mb-2">Commands</h3>
+          <div className="flex flex-wrap gap-1.5">
+            {commandsUsed.map((c) => (
+              <Chip key={c} size="sm" variant="soft" className="font-mono text-[11px] text-[var(--accent-cyan)] bg-[rgba(88,166,255,0.1)] border border-[rgba(88,166,255,0.2)]">
+                {c}
+              </Chip>
+            ))}
+          </div>
+        </div>
+      )}
+      {hasSkills && (
+        <div>
+          <h3 className="text-sm font-semibold text-[var(--text-bright)] mb-2">Skills</h3>
+          <div className="flex flex-wrap gap-1.5">
+            {skillsUsed.map((s) => (
+              <Chip key={s} size="sm" variant="soft" className="font-mono text-[11px] text-[var(--accent-yellow)] bg-[rgba(210,153,34,0.1)] border border-[rgba(210,153,34,0.2)]">
+                {s}
+              </Chip>
+            ))}
+          </div>
+        </div>
+      )}
+      {hasSubagents && (
+        <div>
+          <h3 className="text-sm font-semibold text-[var(--text-bright)] mb-2">Subagents</h3>
+          <div className="flex flex-wrap gap-1.5">
+            {subagentsUsed.map((s) => (
+              <Chip key={s} size="sm" variant="soft" className="font-mono text-[11px] text-[var(--accent-green)] bg-[rgba(63,185,80,0.1)] border border-[rgba(63,185,80,0.2)]">
+                {s}
+              </Chip>
+            ))}
+          </div>
         </div>
       )}
     </div>

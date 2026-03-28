@@ -93,6 +93,9 @@ class SessionDetail(BaseModel):
     # Detail-specific fields
     tool_usage: dict[str, int] = {}
     mcp_tool_usage: dict[str, int] = {}
+    skills_used: list[str] = []
+    subagents_used: list[str] = []
+    commands_used: list[str] = []
     total_input_tokens: int = 0
     total_output_tokens: int = 0
     total_cache_creation_tokens: int = 0
@@ -123,6 +126,13 @@ class TokenStats(BaseModel):
     today: TokenPeriod = TokenPeriod()
     this_week: TokenPeriod = TokenPeriod()
     this_month: TokenPeriod = TokenPeriod()
+
+
+class MemoryFile(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    name: str = ""
+    content: str = ""
 
 
 class DashboardMessage(BaseModel):

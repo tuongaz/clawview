@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import type { SessionDetail } from '../types'
+import type { MemoryFile } from '../types'
 
-interface UseSessionDetailResult {
-  detail: SessionDetail | null
+interface UseMemoryFilesResult {
+  files: MemoryFile[]
   loading: boolean
   error: string | null
 }
 
-export function useSessionDetail(sessionId: string): UseSessionDetailResult {
-  const [detail, setDetail] = useState<SessionDetail | null>(null)
+export function useMemoryFiles(sessionId: string): UseMemoryFilesResult {
+  const [files, setFiles] = useState<MemoryFile[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const wsRef = useRef<WebSocket | null>(null)
@@ -20,7 +20,7 @@ export function useSessionDetail(sessionId: string): UseSessionDetailResult {
     if (!mountedRef.current) return
 
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const ws = new WebSocket(`${protocol}//${location.host}/ws/sessions/${sessionId}`)
+    const ws = new WebSocket(`${protocol}//${location.host}/ws/sessions/${sessionId}/memory`)
     wsRef.current = ws
 
     ws.onopen = () => {
@@ -29,13 +29,8 @@ export function useSessionDetail(sessionId: string): UseSessionDetailResult {
 
     ws.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data)
-        if (data.error) {
-          setError(data.error)
-          setLoading(false)
-          return
-        }
-        setDetail(data as SessionDetail)
+        const data = JSON.parse(event.data) as MemoryFile[]
+        setFiles(data)
         setError(null)
         setLoading(false)
       } catch {
@@ -71,5 +66,5 @@ export function useSessionDetail(sessionId: string): UseSessionDetailResult {
     }
   }, [connect])
 
-  return { detail, loading, error }
+  return { files, loading, error }
 }

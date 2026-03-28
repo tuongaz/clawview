@@ -44,3 +44,12 @@ body {
   0%, 100% { opacity: 0.2; }
   50% { opacity: 1; }
 }
+
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.animate-slide-in {
+  animation: slide-in-right 0.2s ease-out;
+}

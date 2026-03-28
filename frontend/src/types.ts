@@ -46,6 +46,9 @@ export interface Turn {
 export interface SessionDetail extends Session {
   toolUsage: Record<string, number>
   mcpToolUsage: Record<string, number>
+  skillsUsed: string[]
+  subagentsUsed: string[]
+  commandsUsed: string[]
   totalInputTokens: number
   totalOutputTokens: number
   totalCacheCreationTokens: number
@@ -53,6 +56,11 @@ export interface SessionDetail extends Session {
   totalDurationMs: number
   turnCount: number
   turns: Turn[]
+}
+
+export interface MemoryFile {
+  name: string
+  content: string
 }
 
 export interface ProjectGroup {

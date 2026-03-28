@@ -13,9 +13,10 @@ from fastapi.staticfiles import StaticFiles
 from clawhawk.sessions import (
     enrich_session_detail,
     find_session_file,
+    load_memory_files,
     parse_session_detail,
 )
-from clawhawk.ws import session_detail_websocket, websocket_endpoint
+from clawhawk.ws import session_detail_websocket, session_memory_websocket, websocket_endpoint
 
 # Resolve web/dist relative to the project root (3 levels up from src/clawhawk/app.py)
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -48,6 +49,11 @@ async def ws_session_detail_route(ws: WebSocket, session_id: str) -> None:
     await session_detail_websocket(ws, session_id)
 
 
+@app.websocket("/ws/sessions/{session_id}/memory")
+async def ws_session_memory_route(ws: WebSocket, session_id: str) -> None:
+    await session_memory_websocket(ws, session_id)
+
+
 @app.get("/api/sessions/{session_id}")
 async def get_session_detail(session_id: str) -> JSONResponse:
     """Return full session detail for a given session ID."""
@@ -69,6 +75,15 @@ async def get_session_detail(session_id: str) -> JSONResponse:
 
     return JSONResponse(
         content=detail.model_dump(by_alias=True, mode="json"),
+    )
+
+
+@app.get("/api/sessions/{session_id}/memory")
+async def get_session_memory(session_id: str) -> JSONResponse:
+    """Return memory files for the project that owns the given session."""
+    files = await asyncio.to_thread(load_memory_files, session_id)
+    return JSONResponse(
+        content=[f.model_dump(by_alias=True) for f in files],
     )
 
 

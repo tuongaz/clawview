@@ -7,11 +7,12 @@ import logging
 
 from fastapi import WebSocket, WebSocketDisconnect
 
-from clawhawk.models import DashboardMessage, ProjectGroup, SessionDetail
+from clawhawk.models import DashboardMessage, MemoryFile, ProjectGroup, SessionDetail
 from clawhawk.sessions import (
     enrich_session_detail,
     find_session_file,
     load_grouped_sessions,
+    load_memory_files,
     parse_session_detail,
 )
 from clawhawk.stats import load_token_stats
@@ -100,3 +101,36 @@ async def session_detail_websocket(ws: WebSocket, session_id: str) -> None:
         pass
     except Exception:
         logger.debug("Session detail WebSocket connection closed")
+
+
+def _serialize_memory_files(files: list[MemoryFile]) -> str:
+    import json
+
+    return json.dumps([f.model_dump(by_alias=True) for f in files])
+
+
+async def session_memory_websocket(ws: WebSocket, session_id: str) -> None:
+    """Accept a WebSocket connection and push memory files on change."""
+    await ws.accept()
+
+    last_data: bytes = b""
+
+    try:
+        while True:
+            files = await asyncio.to_thread(load_memory_files, session_id)
+            data_str = _serialize_memory_files(files)
+            data_bytes = data_str.encode()
+
+            if data_bytes != last_data:
+                await ws.send_text(data_str)
+                last_data = data_bytes
+
+            # Use fast tick if session is active
+            detail = await _load_session_detail(session_id)
+            is_active = detail.is_active if detail else False
+            interval = _DETAIL_TICK_FAST if is_active else _DETAIL_TICK_SLOW
+            await asyncio.sleep(interval)
+    except WebSocketDisconnect:
+        pass
+    except Exception:
+        logger.debug("Session memory WebSocket connection closed")
