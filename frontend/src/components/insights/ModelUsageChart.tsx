@@ -50,7 +50,7 @@ export function ModelUsageChart({ userInteractions }: ModelUsageChartProps) {
           <Tooltip
             contentStyle={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12 }}
             labelStyle={{ color: 'var(--text-bright)' }}
-            formatter={(value: number) => fmtTokens(value)}
+            formatter={(value) => value != null ? fmtTokens(Number(value)) : ''}
           />
           <Legend
             wrapperStyle={{ fontSize: 11 }}

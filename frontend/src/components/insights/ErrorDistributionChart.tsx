@@ -37,7 +37,7 @@ export function ErrorDistributionChart({ errors }: ErrorDistributionChartProps) 
           <Tooltip
             contentStyle={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12 }}
             labelStyle={{ color: 'var(--text-bright)' }}
-            formatter={(value: number) => value}
+            formatter={(value) => value ?? 0}
           />
           <Legend
             wrapperStyle={{ fontSize: 11 }}

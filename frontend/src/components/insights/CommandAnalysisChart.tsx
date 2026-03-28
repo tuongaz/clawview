@@ -38,7 +38,7 @@ export function CommandAnalysisChart({ userInteractions }: CommandAnalysisChartP
           <Tooltip
             contentStyle={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12 }}
             labelStyle={{ color: 'var(--text-bright)' }}
-            formatter={(value: number) => `${value}%`}
+            formatter={(value) => value != null ? `${value}%` : ''}
           />
           <Bar dataKey="percentage" fill="#48bb78" radius={[4, 4, 0, 0]} name="Commands" />
         </BarChart>

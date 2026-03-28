@@ -57,7 +57,7 @@ export function CommandLengthChart({ commandDetails }: CommandLengthChartProps) 
               fontSize: 12,
             }}
             labelStyle={{ color: 'var(--text-bright)' }}
-            formatter={(value: number) => [`${value.toLocaleString()} tokens`, 'avg tokens/cmd']}
+            formatter={(value) => value != null ? [`${Number(value).toLocaleString()} tokens`, 'avg tokens/cmd'] : ''}
           />
           <Line
             type="monotone"

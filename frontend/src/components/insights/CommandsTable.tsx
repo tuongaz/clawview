@@ -104,7 +104,6 @@ export function CommandsTable({ commandDetails }: CommandsTableProps) {
   }
 
   const thClass = 'px-3 py-2 text-left text-[11px] font-medium text-[var(--text-secondary)] cursor-pointer select-none whitespace-nowrap hover:text-[var(--text-primary)] transition-colors'
-  const tdClass = 'px-3 py-2 text-[12px] font-mono text-[var(--text-primary)] whitespace-nowrap'
 
   return (
     <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg">

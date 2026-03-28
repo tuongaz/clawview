@@ -50,7 +50,7 @@ export function TokenOverTimeChart({ dailyStats }: TokenOverTimeChartProps) {
             contentStyle={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12 }}
             labelStyle={{ color: 'var(--text-bright)' }}
             itemStyle={{ color: 'var(--text-secondary)' }}
-            formatter={(value: number) => fmtTokens(value)}
+            formatter={(value) => value != null ? fmtTokens(Number(value)) : ''}
           />
           <Legend wrapperStyle={{ fontSize: 11, color: 'var(--text-secondary)' }} />
           <Bar dataKey="input" stackId="tokens" fill="#667eea" name="Input" radius={[0, 0, 0, 0]} />
