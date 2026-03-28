@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ChevronUp, ChevronDown } from 'lucide-react'
 import type { Turn } from '../../types'
 import { formatDuration } from '../../utils'
 import { TaskNotificationContent } from './TaskNotificationContent'
@@ -40,9 +41,6 @@ export function TurnCard({ turn, isFirst, defaultExpanded }: TurnCardProps) {
         className="flex items-center gap-2 flex-wrap cursor-pointer select-none"
         onClick={() => setExpanded(!expanded)}
       >
-        <span className="text-[var(--text-secondary)] text-xs transition-transform duration-150" style={{ transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>
-          ▶
-        </span>
         <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-mono font-semibold shrink-0 ${isFirst ? 'bg-[rgba(88,166,255,0.25)] text-[var(--accent-cyan)]' : 'bg-[rgba(88,166,255,0.15)] text-[var(--accent-cyan)]'}`}>
           {turn.index}
         </span>
@@ -50,14 +48,18 @@ export function TurnCard({ turn, isFirst, defaultExpanded }: TurnCardProps) {
           <span className="text-[var(--text-secondary)] text-xs font-mono">{timeStr}</span>
         )}
         {turn.durationMs > 0 && (
-          <span className="text-[var(--text-secondary)] text-[11px] font-mono ml-auto">
+          <span className="text-[var(--text-secondary)] text-[11px] font-mono">
             {formatDuration(turn.durationMs)}
           </span>
         )}
+        {expanded
+          ? <ChevronUp size={14} className="text-[var(--text-secondary)] ml-auto shrink-0" />
+          : <ChevronDown size={14} className="text-[var(--text-secondary)] ml-auto shrink-0" />
+        }
       </div>
 
       {!expanded && (
-        <div className="mt-2 text-sm text-[var(--text-secondary)] font-mono whitespace-pre-line line-clamp-2">
+        <div className="mt-2 text-sm text-[var(--text-primary)] font-mono whitespace-pre-line line-clamp-2">
           {getPreviewText(turn)}
         </div>
       )}

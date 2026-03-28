@@ -34,7 +34,7 @@ export function ConversationTimeline({ turns, isActive, isWaiting }: Conversatio
       </SectionTitle>
       <div className="space-y-2">
         {visibleTurns.map((turn) => (
-          <TurnCard key={turn.index} turn={turn} isFirst={turn.index === 1} defaultExpanded={turn.index === turns.length} />
+          <TurnCard key={turn.index} turn={turn} isFirst={turn.index === 1} />
         ))}
       </div>
       {hasMore && !showAll && (
