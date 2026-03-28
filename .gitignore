@@ -23,3 +23,9 @@ __pycache__/
 
 docs
 web/dist
+ralph/progress.txt
+tasks
+.playwright-mcp
+ralph/.last-branch
+
+
