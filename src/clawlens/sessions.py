@@ -729,71 +729,12 @@ def parse_session_detail(fpath: str) -> SessionDetail | None:
 def _is_session_active(
     session_id: str, cwd: str, fpath: str, active_info: ActiveInfo
 ) -> bool:
-    """Determine if a session is active using the same logic as the dashboard.
+    """Determine if a session is active based on the session registry.
 
-    A session is active if it is registered in the session registry OR if it is
-    the newest JSONL in a cwd that has a running Claude process (handles /clear
-    creating a new session ID not yet in the registry).
+    A session is active only if it is registered in the session registry
+    (i.e. its process is still running).
     """
-    # Direct registry match.
-    is_registered = session_id in active_info.session_ids
-
-    # Cwd fallback: check if this session's cwd has a running process AND this
-    # file is the newest JSONL in that directory.
-    is_newest_in_active_cwd = False
-    if cwd in active_info.running_cwds:
-        project_dir = os.path.dirname(fpath)
-        try:
-            best_mtime = 0.0
-            best_sid = ""
-            for name in os.listdir(project_dir):
-                if not name.endswith(".jsonl"):
-                    continue
-                p = os.path.join(project_dir, name)
-                try:
-                    mt = os.stat(p).st_mtime
-                except OSError:
-                    continue
-                if mt > best_mtime:
-                    best_mtime = mt
-                    best_sid = name.removesuffix(".jsonl")
-            is_newest_in_active_cwd = best_sid == session_id
-        except OSError:
-            pass
-
-    # If registered, check it hasn't been superseded by a newer session in the
-    # same cwd from the same PID (the /clear case).
-    if is_registered and is_newest_in_active_cwd:
-        return True
-    if is_registered:
-        # Check for stale: if a newer session exists for the same cwd and PID.
-        pid = active_info.session_pid.get(session_id)
-        if pid is not None:
-            project_dir = os.path.dirname(fpath)
-            try:
-                my_mtime = os.stat(fpath).st_mtime
-                for name in os.listdir(project_dir):
-                    if not name.endswith(".jsonl"):
-                        continue
-                    p = os.path.join(project_dir, name)
-                    other_sid = name.removesuffix(".jsonl")
-                    if other_sid == session_id:
-                        continue
-                    try:
-                        mt = os.stat(p).st_mtime
-                    except OSError:
-                        continue
-                    if mt > my_mtime:
-                        # Newer file exists — if it's unregistered or same PID,
-                        # this session is stale.
-                        other_pid = active_info.session_pid.get(other_sid)
-                        if other_pid is None or other_pid == pid:
-                            return False
-            except OSError:
-                pass
-        return True
-
-    return is_newest_in_active_cwd
+    return session_id in active_info.session_ids
 
 
 def enrich_session_detail(detail: SessionDetail, fpath: str) -> None:
@@ -850,25 +791,16 @@ class ActiveInfo:
     """Active session detection data."""
 
     session_ids: set[str]
-    running_cwds: set[str]
-    session_pid: dict[str, int]  # session_id -> pid
 
 
 def _load_active_info(home: str) -> ActiveInfo:
     """Read ~/.claude/sessions/*.json to find sessions whose process is still running.
 
-    Returns both the set of session IDs listed in the registry AND the set of
-    cwds for running processes.  The cwds are used as a fallback: when /clear
-    is used, Claude Code creates a new JSONL (with a new session ID) but does
-    NOT update the registry file, so the new session ID won't appear in
-    ``session_ids``.  We detect this by checking whether a JSONL belongs to a
-    cwd that still has a live Claude process.
-
+    Returns the set of session IDs whose registered PID is still alive.
     When multiple registry entries share the same PID (e.g. after /rename or
-    /clear), only the most recently modified entry is kept so the old session
-    is no longer marked active.
+    /clear), only the most recently modified entry is kept.
     """
-    info = ActiveInfo(session_ids=set(), running_cwds=set(), session_pid={})
+    info = ActiveInfo(session_ids=set())
     sessions_dir = os.path.join(home, ".claude", "sessions")
 
     try:
@@ -877,8 +809,8 @@ def _load_active_info(home: str) -> ActiveInfo:
         return info
 
     # Collect all live registry entries grouped by PID so we can deduplicate.
-    # pid -> list of (file_mod_time, session_id, cwd)
-    pid_entries: dict[int, list[tuple[float, str, str]]] = {}
+    # pid -> list of (file_mod_time, session_id)
+    pid_entries: dict[int, list[tuple[float, str]]] = {}
 
     for name in entries:
         if not name.endswith(".json"):
@@ -893,7 +825,6 @@ def _load_active_info(home: str) -> ActiveInfo:
 
         session_id = data.get("sessionId", "")
         pid = data.get("pid", 0)
-        cwd = data.get("cwd", "")
         if not session_id or not pid:
             continue
 
@@ -903,16 +834,13 @@ def _load_active_info(home: str) -> ActiveInfo:
         except (OSError, ProcessLookupError):
             continue
 
-        pid_entries.setdefault(pid, []).append((stat.st_mtime, session_id, cwd))
+        pid_entries.setdefault(pid, []).append((stat.st_mtime, session_id))
 
     # For each PID, only keep the most recently modified registry entry.
     for pid, elist in pid_entries.items():
         elist.sort(reverse=True)  # newest first by mod_time
-        _, session_id, cwd = elist[0]
+        _, session_id = elist[0]
         info.session_ids.add(session_id)
-        info.session_pid[session_id] = pid
-        if cwd:
-            info.running_cwds.add(cwd)
 
     return info
 
@@ -942,10 +870,6 @@ def load_grouped_sessions(limit: int = 0) -> list[ProjectGroup]:
     # Group sessions by project directory name.
     project_map: dict[str, list[Session]] = {}
 
-    # First pass: parse all sessions and track the most recently modified
-    # JSONL per running cwd (handles /clear creating a new session ID that
-    # isn't in the registry).
-    cwd_newest: dict[str, tuple[float, str]] = {}  # cwd -> (mod_time, session_id)
     parsed: list[tuple[str, Session]] = []  # (fpath, session)
 
     for fpath in files:
@@ -969,46 +893,11 @@ def load_grouped_sessions(limit: int = 0) -> list[ProjectGroup]:
             sess = result
             _cache[fpath] = CachedSession(mod_time=mod_time, session=sess.model_copy())
 
-        if sess.cwd in active_info.running_cwds:
-            prev = cwd_newest.get(sess.cwd)
-            if prev is None or mod_time > prev[0]:
-                cwd_newest[sess.cwd] = (mod_time, sess.session_id)
-
         parsed.append((fpath, sess))
 
-    # Session IDs that are the newest file for a running cwd.
-    cwd_active_ids: set[str] = {sid for _, sid in cwd_newest.values()}
-
-    # Registered session IDs that have been superseded by a newer JSONL in
-    # the same cwd (i.e. /clear was used).  These should NOT be marked active.
-    # Only mark as stale when the newer session is from the same PID or is
-    # unregistered (the /clear case).  Two separate processes (different PIDs)
-    # working on the same project are both legitimately active.
-    stale_registered: set[str] = set()
-    for cwd, (_, newest_sid) in cwd_newest.items():
-        newest_pid = active_info.session_pid.get(newest_sid)
-        for sid in active_info.session_ids:
-            if sid == newest_sid:
-                continue
-            sid_pid = active_info.session_pid.get(sid)
-            # If both sessions are registered under different PIDs, they are
-            # independent processes — neither is stale.
-            if newest_pid is not None and sid_pid is not None and newest_pid != sid_pid:
-                continue
-            # Check if this registered session belongs to the same cwd.
-            for _, s in parsed:
-                if s.session_id == sid and s.cwd == cwd:
-                    stale_registered.add(sid)
-                    break
-
-    # Second pass: assign active status, project name, IDE client.
+    # Assign active status, project name, IDE client.
     for fpath, sess in parsed:
-        is_registered = (
-            sess.session_id in active_info.session_ids
-            and sess.session_id not in stale_registered
-        )
-        is_newest_in_active_cwd = sess.session_id in cwd_active_ids
-        sess.is_active = is_registered or is_newest_in_active_cwd
+        sess.is_active = sess.session_id in active_info.session_ids
 
         dir_name = os.path.basename(os.path.dirname(fpath))
         sess.project_name = decode_project_path(dir_name)
