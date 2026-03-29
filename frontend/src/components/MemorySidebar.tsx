@@ -26,7 +26,7 @@ export function MemoryPanel() {
       title="Memory Files"
       footer={
         !loading && files.length > 0 ? (
-          <span className="text-[15px] text-[var(--text-secondary)]">
+          <span className="text-sm text-[var(--text-secondary)]">
             {files.length} memory file{files.length !== 1 ? 's' : ''}
           </span>
         ) : undefined
@@ -66,7 +66,7 @@ export function MemoryPanel() {
                 </button>
                 {isExpanded && (
                   <div className="px-4 pb-3 pt-1 border-t border-[var(--border)] bg-[var(--bg-secondary)]">
-                    <div className="prose prose-invert prose-sm max-w-none text-base [&_p]:text-base [&_li]:text-base [&_h1]:text-base [&_h2]:text-base [&_h3]:text-base [&_code]:text-[15px] [&_pre]:text-[15px]">
+                    <div className="prose prose-invert prose-sm max-w-none text-base [&_p]:text-base [&_li]:text-base [&_h1]:text-base [&_h2]:text-base [&_h3]:text-base [&_code]:text-sm [&_pre]:text-sm">
                       <Markdown remarkPlugins={[remarkGfm, remarkBreaks]}>{file.content}</Markdown>
                     </div>
                   </div>

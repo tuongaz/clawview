@@ -56,7 +56,7 @@ export function SkillPanel() {
       {error && <ErrorAlert message={error} />}
 
       {!loading && !error && content != null && (
-        <div className="prose prose-invert prose-sm max-w-none text-base [&_p]:text-base [&_li]:text-base [&_h1]:text-base [&_h2]:text-base [&_h3]:text-base [&_code]:text-[15px] [&_pre]:text-[15px]">
+        <div className="prose prose-invert prose-sm max-w-none text-base [&_p]:text-base [&_li]:text-base [&_h1]:text-base [&_h2]:text-base [&_h3]:text-base [&_code]:text-sm [&_pre]:text-sm">
           <Markdown remarkPlugins={[remarkGfm, remarkBreaks]}>{content}</Markdown>
         </div>
       )}

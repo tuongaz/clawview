@@ -25,20 +25,20 @@ export function SubAgentSkillChart({ advancedTools }: SubAgentSkillChartProps) {
       <div className="space-y-4">
         {agentData.length > 0 && (
           <div>
-            <div className="text-[var(--text-secondary)] text-[15px] mb-2 font-medium">SubAgent Types</div>
+            <div className="text-[var(--text-secondary)] text-sm mb-2 font-medium">SubAgent Types</div>
             <ResponsiveContainer width="100%" height={Math.max(120, agentData.length * 28)}>
               <BarChart data={agentData} layout="vertical" margin={{ top: 0, right: 12, bottom: 0, left: 0 }}>
-                <XAxis type="number" tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                <XAxis type="number" tick={{ fill: 'var(--text-secondary)', fontSize: 14 }} axisLine={false} tickLine={false} />
                 <YAxis
                   type="category"
                   dataKey="name"
-                  tick={{ fill: 'var(--text-secondary)', fontSize: 11 }}
+                  tick={{ fill: 'var(--text-secondary)', fontSize: 14 }}
                   axisLine={false}
                   tickLine={false}
                   width={120}
                 />
                 <Tooltip
-                  contentStyle={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12 }}
+                  contentStyle={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 15 }}
                   labelStyle={{ color: 'var(--text-bright)' }}
                   itemStyle={{ color: 'var(--text-secondary)' }}
                 />
@@ -54,20 +54,20 @@ export function SubAgentSkillChart({ advancedTools }: SubAgentSkillChartProps) {
 
         {skillData.length > 0 && (
           <div>
-            <div className="text-[var(--text-secondary)] text-[15px] mb-2 font-medium">Skills / Commands</div>
+            <div className="text-[var(--text-secondary)] text-sm mb-2 font-medium">Skills / Commands</div>
             <ResponsiveContainer width="100%" height={Math.max(120, skillData.length * 28)}>
               <BarChart data={skillData} layout="vertical" margin={{ top: 0, right: 12, bottom: 0, left: 0 }}>
-                <XAxis type="number" tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                <XAxis type="number" tick={{ fill: 'var(--text-secondary)', fontSize: 14 }} axisLine={false} tickLine={false} />
                 <YAxis
                   type="category"
                   dataKey="name"
-                  tick={{ fill: 'var(--text-secondary)', fontSize: 11 }}
+                  tick={{ fill: 'var(--text-secondary)', fontSize: 14 }}
                   axisLine={false}
                   tickLine={false}
                   width={120}
                 />
                 <Tooltip
-                  contentStyle={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12 }}
+                  contentStyle={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 15 }}
                   labelStyle={{ color: 'var(--text-bright)' }}
                   itemStyle={{ color: 'var(--text-secondary)' }}
                 />

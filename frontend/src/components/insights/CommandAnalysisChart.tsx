@@ -25,18 +25,18 @@ export function CommandAnalysisChart({ userInteractions }: CommandAnalysisChartP
         <BarChart data={data} margin={{ top: 0, right: 12, bottom: 0, left: 0 }}>
           <XAxis
             dataKey="tools"
-            tick={{ fill: 'var(--text-secondary)', fontSize: 11 }}
+            tick={{ fill: 'var(--text-secondary)', fontSize: 14 }}
             axisLine={false}
             tickLine={false}
           />
           <YAxis
-            tick={{ fill: 'var(--text-secondary)', fontSize: 11 }}
+            tick={{ fill: 'var(--text-secondary)', fontSize: 14 }}
             axisLine={false}
             tickLine={false}
             tickFormatter={(v: number) => `${v}%`}
           />
           <Tooltip
-            contentStyle={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12 }}
+            contentStyle={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 15 }}
             labelStyle={{ color: 'var(--text-bright)' }}
             formatter={(value) => value != null ? `${value}%` : ''}
           />

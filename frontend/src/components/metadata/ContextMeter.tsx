@@ -23,11 +23,11 @@ export function ContextMeter({ contextTokens, maxContextTokens }: ContextMeterPr
             className="w-full"
           >
             <div className="flex justify-between items-center mb-0.5">
-              <span className="text-[14px] font-mono text-[var(--text-secondary)]">
+              <span className="text-sm font-mono text-[var(--text-secondary)]">
                 {formatTokens(contextTokens)} / {formatTokens(maxContextTokens)}
               </span>
               {maxContextTokens > 0 && (
-                <Meter.Output className="text-[14px] font-mono text-[var(--text-secondary)] opacity-70" />
+                <Meter.Output className="text-sm font-mono text-[var(--text-secondary)] opacity-70" />
               )}
             </div>
             <Meter.Track className="h-1 bg-white/10 rounded-full">

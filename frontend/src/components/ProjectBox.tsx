@@ -34,12 +34,12 @@ export function ProjectBox({ group, displayName }: ProjectBoxProps) {
             <span className="font-mono text-xl font-bold text-[var(--text-bright)] whitespace-nowrap">
               {name}
             </span>
-            <span className="font-mono text-[15px] text-[var(--text-secondary)] overflow-hidden text-ellipsis whitespace-nowrap">
+            <span className="font-mono text-sm text-[var(--text-secondary)] overflow-hidden text-ellipsis whitespace-nowrap">
               {group.path}
             </span>
           </div>
           <div className="flex items-center gap-3 ml-auto shrink-0">
-            <span className="font-mono text-[15px] text-[var(--text-secondary)] whitespace-nowrap">
+            <span className="font-mono text-sm text-[var(--text-secondary)] whitespace-nowrap">
               {group.sessions.length} session{group.sessions.length !== 1 ? 's' : ''}
               {hasActive && ` · ${activeSessions.length} active`}
             </span>

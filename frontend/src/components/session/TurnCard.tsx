@@ -41,14 +41,14 @@ export function TurnCard({ turn, isFirst, defaultExpanded }: TurnCardProps) {
         className="flex items-center gap-2 flex-wrap cursor-pointer select-none"
         onClick={() => setExpanded(!expanded)}
       >
-        <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-[15px] font-mono font-semibold shrink-0 ${isFirst ? 'bg-[rgba(88,166,255,0.25)] text-[var(--accent-cyan)]' : 'bg-[rgba(88,166,255,0.15)] text-[var(--accent-cyan)]'}`}>
+        <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-sm font-mono font-semibold shrink-0 ${isFirst ? 'bg-[rgba(88,166,255,0.25)] text-[var(--accent-cyan)]' : 'bg-[rgba(88,166,255,0.15)] text-[var(--accent-cyan)]'}`}>
           {turn.index}
         </span>
         {timeStr && (
           <span className="text-[var(--text-secondary)] text-base font-mono">{timeStr}</span>
         )}
         {turn.durationMs > 0 && (
-          <span className="text-[var(--text-secondary)] text-[15px] font-mono">
+          <span className="text-[var(--text-secondary)] text-sm font-mono">
             {formatDuration(turn.durationMs)}
           </span>
         )}

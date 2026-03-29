@@ -34,7 +34,7 @@ export function ProjectInsightsPage() {
       <div className="px-8 py-6 max-sm:px-4 max-sm:py-4 max-w-[1400px] mx-auto">
         <div className="mb-6">
           <h1 className="font-mono text-xl font-bold text-[var(--text-bright)]">{displayName}</h1>
-          <span className="font-mono text-[14px] text-[var(--text-secondary)]">{group?.path ?? projectName}</span>
+          <span className="font-mono text-sm text-[var(--text-secondary)]">{group?.path ?? projectName}</span>
         </div>
 
         {sessionId ? (

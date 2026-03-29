@@ -11,7 +11,7 @@ export function ClientBadge({ client, projectPath }: ClientBadgeProps) {
   const link = ideDeepLink(client, projectPath)
 
   const chip = (
-    <ThemedChip color="cyan" interactive={!!link} className="text-[14px]">
+    <ThemedChip color="cyan" interactive={!!link} className="text-sm">
       {getClientIcon(client)} {client}
     </ThemedChip>
   )

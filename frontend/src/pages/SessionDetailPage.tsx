@@ -71,7 +71,7 @@ export function SessionDetailPage() {
           <div className="flex items-center gap-2 ml-auto">
             {detail.model && <ThemedChip color="cyan">{detail.model}</ThemedChip>}
             {detail.version && (
-              <Chip size="sm" variant="secondary" className="font-mono text-[15px] text-[var(--text-secondary)]">
+              <Chip size="sm" variant="secondary" className="font-mono text-sm text-[var(--text-secondary)]">
                 v{detail.version}
               </Chip>
             )}
@@ -131,7 +131,7 @@ export function SessionDetailPage() {
             {detail.usesMemory && (
               <MetadataField label="Memory" info="Whether Claude's persistent memory system is enabled for this project.">
                 <Link to={`/session/${detail.sessionId}/memory`}>
-                  <ThemedChip color="magenta" interactive className="text-[14px]">
+                  <ThemedChip color="magenta" interactive className="text-sm">
                     <Brain size={12} /> Memory Enabled
                   </ThemedChip>
                 </Link>

@@ -41,14 +41,14 @@ export function InterruptionRateChart({ commandDetails }: InterruptionRateChartP
         <LineChart data={data} margin={{ top: 4, right: 12, bottom: 0, left: 0 }}>
           <XAxis
             dataKey="label"
-            tick={{ fill: 'var(--text-secondary)', fontSize: 10 }}
+            tick={{ fill: 'var(--text-secondary)', fontSize: 13 }}
             axisLine={false}
             tickLine={false}
             interval="preserveStartEnd"
           />
           <YAxis
             yAxisId="pct"
-            tick={{ fill: 'var(--text-secondary)', fontSize: 11 }}
+            tick={{ fill: 'var(--text-secondary)', fontSize: 14 }}
             axisLine={false}
             tickLine={false}
             domain={[0, 'auto']}
@@ -57,7 +57,7 @@ export function InterruptionRateChart({ commandDetails }: InterruptionRateChartP
           <YAxis
             yAxisId="count"
             orientation="right"
-            tick={{ fill: 'var(--text-secondary)', fontSize: 11 }}
+            tick={{ fill: 'var(--text-secondary)', fontSize: 14 }}
             axisLine={false}
             tickLine={false}
           />
@@ -66,12 +66,12 @@ export function InterruptionRateChart({ commandDetails }: InterruptionRateChartP
               background: 'var(--bg-primary)',
               border: '1px solid var(--border)',
               borderRadius: 6,
-              fontSize: 12,
+              fontSize: 15,
             }}
             labelStyle={{ color: 'var(--text-bright)' }}
             itemStyle={{ color: 'var(--text-secondary)' }}
           />
-          <Legend wrapperStyle={{ fontSize: 11 }} />
+          <Legend wrapperStyle={{ fontSize: 14 }} />
           <Line
             yAxisId="pct"
             type="monotone"

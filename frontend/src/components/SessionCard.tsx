@@ -36,7 +36,7 @@ export const SessionCard = memo(function SessionCard({ session, projectPath }: S
             <span className={`font-semibold text-base truncate max-w-[160px] ${isActive ? 'text-[var(--text-bright)]' : 'text-[var(--text-primary)]'}`}>
               {session.name}
             </span>
-            <span className="text-[var(--text-secondary)] font-mono text-[15px]">
+            <span className="text-[var(--text-secondary)] font-mono text-sm">
               {slug}
             </span>
           </>
@@ -45,7 +45,7 @@ export const SessionCard = memo(function SessionCard({ session, projectPath }: S
             {slug}
           </span>
         )}
-        <span className="ml-auto text-[var(--text-secondary)] text-[15px] font-mono">
+        <span className="ml-auto text-[var(--text-secondary)] text-sm font-mono">
           {timeAgo(session.timestamp)}
         </span>
       </Card.Header>
@@ -54,7 +54,7 @@ export const SessionCard = memo(function SessionCard({ session, projectPath }: S
         {session.lastUserPrompt && (
           <div className="text-[var(--text-primary)] text-base leading-[1.4] whitespace-pre-wrap break-words line-clamp-3">
             {session.lastUserPrompt.startsWith('/') ? (
-              <><span className="text-[15px] opacity-60 mr-0.5">&#8984;</span> {session.lastUserPrompt}</>
+              <><span className="text-sm opacity-60 mr-0.5">&#8984;</span> {session.lastUserPrompt}</>
             ) : (
               session.lastUserPrompt
             )}
@@ -62,11 +62,11 @@ export const SessionCard = memo(function SessionCard({ session, projectPath }: S
         )}
 
         {session.lastAction && (
-          <div className="flex items-center gap-1.5 text-warning text-[15px] font-mono bg-warning/[0.08] py-1 px-2.5 rounded-[var(--radius-sm)] line-clamp-2 break-words">
+          <div className="flex items-center gap-1.5 text-warning text-sm font-mono bg-warning/[0.08] py-1 px-2.5 rounded-[var(--radius-sm)] line-clamp-2 break-words">
             {isActive && !isWaiting ? (
               <ActiveDot />
             ) : (
-              <span className="text-[15px] shrink-0">&#9889;</span>
+              <span className="text-sm shrink-0">&#9889;</span>
             )}
             {session.lastAction}
           </div>

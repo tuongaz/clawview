@@ -48,12 +48,12 @@ export function ModelUsageChart({ userInteractions }: ModelUsageChartProps) {
             ))}
           </Pie>
           <Tooltip
-            contentStyle={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12 }}
+            contentStyle={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 15 }}
             labelStyle={{ color: 'var(--text-bright)' }}
             formatter={(value) => value != null ? fmtTokens(Number(value)) : ''}
           />
           <Legend
-            wrapperStyle={{ fontSize: 11 }}
+            wrapperStyle={{ fontSize: 14 }}
             formatter={(value: string) => <span style={{ color: 'var(--text-secondary)' }}>{value}</span>}
           />
         </PieChart>

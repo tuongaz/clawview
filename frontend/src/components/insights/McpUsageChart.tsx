@@ -30,17 +30,17 @@ export function McpUsageChart({ advancedTools }: McpUsageChartProps) {
     <ChartCard title="MCP Server Usage">
       <ResponsiveContainer width="100%" height={Math.max(160, data.length * 28)}>
         <BarChart data={data} layout="vertical" margin={{ top: 0, right: 12, bottom: 0, left: 0 }}>
-          <XAxis type="number" tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} axisLine={false} tickLine={false} />
+          <XAxis type="number" tick={{ fill: 'var(--text-secondary)', fontSize: 14 }} axisLine={false} tickLine={false} />
           <YAxis
             type="category"
             dataKey="name"
-            tick={{ fill: 'var(--text-secondary)', fontSize: 10 }}
+            tick={{ fill: 'var(--text-secondary)', fontSize: 13 }}
             axisLine={false}
             tickLine={false}
             width={160}
           />
           <Tooltip
-            contentStyle={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12 }}
+            contentStyle={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 15 }}
             labelStyle={{ color: 'var(--text-bright)' }}
             itemStyle={{ color: 'var(--text-secondary)' }}
           />

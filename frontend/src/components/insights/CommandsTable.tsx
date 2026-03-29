@@ -103,7 +103,7 @@ export function CommandsTable({ commandDetails }: CommandsTableProps) {
       : <ChevronDown size={12} className="opacity-80" />
   }
 
-  const thClass = 'px-3 py-2 text-left text-[15px] font-medium text-[var(--text-secondary)] cursor-pointer select-none whitespace-nowrap hover:text-[var(--text-primary)] transition-colors'
+  const thClass = 'px-3 py-2 text-left text-sm font-medium text-[var(--text-secondary)] cursor-pointer select-none whitespace-nowrap hover:text-[var(--text-primary)] transition-colors'
 
   return (
     <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg">
@@ -128,7 +128,7 @@ export function CommandsTable({ commandDetails }: CommandsTableProps) {
               <button
                 key={f}
                 onClick={() => handleFilterChange(f)}
-                className={`px-2.5 py-1 text-[15px] rounded transition-colors ${
+                className={`px-2.5 py-1 text-sm rounded transition-colors ${
                   interruptFilter === f
                     ? 'bg-[var(--accent-cyan)] bg-opacity-20 text-[var(--accent-cyan)] border border-[rgba(88,166,255,0.3)]'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-transparent'
@@ -139,7 +139,7 @@ export function CommandsTable({ commandDetails }: CommandsTableProps) {
             ))}
           </div>
 
-          <span className="text-[var(--text-secondary)] text-[15px] ml-auto">
+          <span className="text-[var(--text-secondary)] text-sm ml-auto">
             {sorted.length} command{sorted.length !== 1 ? 's' : ''}
           </span>
         </div>
@@ -197,7 +197,7 @@ export function CommandsTable({ commandDetails }: CommandsTableProps) {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--border)]">
-          <span className="text-[var(--text-secondary)] text-[15px]">
+          <span className="text-[var(--text-secondary)] text-sm">
             Page {safePage + 1} of {totalPages}
           </span>
           <div className="flex items-center gap-1">
@@ -223,7 +223,7 @@ export function CommandsTable({ commandDetails }: CommandsTableProps) {
 }
 
 function CommandRow({ cmd, isExpanded, onToggle }: { cmd: CommandDetail; isExpanded: boolean; onToggle: () => void }) {
-  const tdClass = 'px-3 py-2 text-[14px] font-mono text-[var(--text-primary)] whitespace-nowrap'
+  const tdClass = 'px-3 py-2 text-sm font-mono text-[var(--text-primary)] whitespace-nowrap'
 
   return (
     <>
@@ -234,22 +234,22 @@ function CommandRow({ cmd, isExpanded, onToggle }: { cmd: CommandDetail; isExpan
         <td className={`${tdClass} !whitespace-normal min-w-[200px] max-w-[400px]`}>
           <div className="flex flex-col gap-0.5">
             <span className="text-[var(--text-primary)] leading-snug">{truncate(cmd.user_message, 120)}</span>
-            <span className="text-[var(--text-secondary)] text-[14px] opacity-70">{fmtTimestamp(cmd.timestamp)}</span>
+            <span className="text-[var(--text-secondary)] text-sm opacity-70">{fmtTimestamp(cmd.timestamp)}</span>
           </div>
         </td>
         <td className={tdClass}>
-          <span className="text-[var(--accent-cyan)] text-[15px]">{shortenModel(cmd.model)}</span>
+          <span className="text-[var(--accent-cyan)] text-sm">{shortenModel(cmd.model)}</span>
         </td>
         <td className={`${tdClass} text-center`}>{cmd.steps}</td>
         <td className={`${tdClass} text-center`}>{cmd.tools_count}</td>
         <td className={tdClass}>{fmtTokens(cmd.tokens)}</td>
         <td className={tdClass}>
           {cmd.interrupted ? (
-            <span className="inline-block px-1.5 py-0.5 text-[14px] rounded bg-[rgba(239,68,68,0.15)] text-[#ef4444] border border-[rgba(239,68,68,0.25)]">
+            <span className="inline-block px-1.5 py-0.5 text-sm rounded bg-[rgba(239,68,68,0.15)] text-[#ef4444] border border-[rgba(239,68,68,0.25)]">
               Interrupted
             </span>
           ) : (
-            <span className="inline-block px-1.5 py-0.5 text-[14px] rounded bg-[rgba(72,187,120,0.1)] text-[#48bb78] border border-[rgba(72,187,120,0.2)]">
+            <span className="inline-block px-1.5 py-0.5 text-sm rounded bg-[rgba(72,187,120,0.1)] text-[#48bb78] border border-[rgba(72,187,120,0.2)]">
               Complete
             </span>
           )}
@@ -260,19 +260,19 @@ function CommandRow({ cmd, isExpanded, onToggle }: { cmd: CommandDetail; isExpan
           <td colSpan={6} className="px-4 py-3 bg-[var(--bg-primary)]">
             <div className="space-y-2">
               <div>
-                <div className="text-[var(--text-secondary)] text-[14px] font-medium mb-1">Full Message</div>
-                <div className="text-[var(--text-primary)] text-[14px] font-mono whitespace-pre-wrap break-words leading-relaxed max-h-[200px] overflow-y-auto">
+                <div className="text-[var(--text-secondary)] text-sm font-medium mb-1">Full Message</div>
+                <div className="text-[var(--text-primary)] text-sm font-mono whitespace-pre-wrap break-words leading-relaxed max-h-[200px] overflow-y-auto">
                   {cmd.user_message}
                 </div>
               </div>
               {cmd.tool_names.length > 0 && (
                 <div>
-                  <div className="text-[var(--text-secondary)] text-[14px] font-medium mb-1">Tools Used</div>
+                  <div className="text-[var(--text-secondary)] text-sm font-medium mb-1">Tools Used</div>
                   <div className="flex flex-wrap gap-1">
                     {cmd.tool_names.map((t, i) => (
                       <span
                         key={i}
-                        className="inline-block px-1.5 py-0.5 text-[14px] font-mono rounded bg-[rgba(118,75,162,0.12)] text-[#a78bfa] border border-[rgba(118,75,162,0.25)]"
+                        className="inline-block px-1.5 py-0.5 text-sm font-mono rounded bg-[rgba(118,75,162,0.12)] text-[#a78bfa] border border-[rgba(118,75,162,0.25)]"
                       >
                         {t}
                       </span>

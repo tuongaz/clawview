@@ -38,13 +38,13 @@ export function CommandLengthChart({ commandDetails }: CommandLengthChartProps) 
         <LineChart data={data} margin={{ top: 4, right: 12, bottom: 0, left: 0 }}>
           <XAxis
             dataKey="label"
-            tick={{ fill: 'var(--text-secondary)', fontSize: 10 }}
+            tick={{ fill: 'var(--text-secondary)', fontSize: 13 }}
             axisLine={false}
             tickLine={false}
             interval="preserveStartEnd"
           />
           <YAxis
-            tick={{ fill: 'var(--text-secondary)', fontSize: 11 }}
+            tick={{ fill: 'var(--text-secondary)', fontSize: 14 }}
             axisLine={false}
             tickLine={false}
             tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)}
@@ -54,7 +54,7 @@ export function CommandLengthChart({ commandDetails }: CommandLengthChartProps) 
               background: 'var(--bg-primary)',
               border: '1px solid var(--border)',
               borderRadius: 6,
-              fontSize: 12,
+              fontSize: 15,
             }}
             labelStyle={{ color: 'var(--text-bright)' }}
             formatter={(value) => value != null ? [`${Number(value).toLocaleString()} tokens`, 'avg tokens/cmd'] : ''}
