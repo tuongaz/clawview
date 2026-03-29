@@ -91,7 +91,7 @@ export function Dashboard() {
   return (
     <>
       <Header>
-        <span className="text-[var(--text-secondary)] text-[13px] pl-3.5 border-l border-[var(--border)]">
+        <span className="text-[var(--text-secondary)] text-[15px] pl-3.5 border-l border-[var(--border)]">
           {totalSessions} session{totalSessions !== 1 ? 's' : ''}
           {activeSessions > 0 && <> &middot; {activeSessions} active</>}
           {' '}&middot; {projectCount} project{projectCount !== 1 ? 's' : ''}
@@ -105,7 +105,7 @@ export function Dashboard() {
               ['Month', stats.thisMonth],
             ] as const).map(([label, period]) => (
               <div key={label} className="flex flex-col items-center gap-0.5">
-                <span className="text-[10px] font-[var(--font-mono)] text-[var(--text-secondary)] uppercase tracking-wider">{label}</span>
+                <span className="text-[12px] font-[var(--font-mono)] text-[var(--text-secondary)] uppercase tracking-wider">{label}</span>
                 <span className="text-sm font-[var(--font-mono)] font-semibold text-[var(--text-primary)]">
                   {formatTokens(period.inputTokens + period.outputTokens)}
                 </span>
@@ -114,7 +114,7 @@ export function Dashboard() {
           </div>
         )}
 
-        <div className="flex items-center gap-3 text-xs">
+        <div className="flex items-center gap-3 text-sm">
           <Switch
             size="lg"
             isSelected={activeOnly}

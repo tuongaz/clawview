@@ -1025,8 +1025,10 @@ def load_grouped_sessions(limit: int = 0) -> list[ProjectGroup]:
         )
 
     # Sort projects by most recent session timestamp descending.
+    # Use max timestamp across all sessions (including active ones) so that
+    # projects with the most recently updated sessions always appear first.
     groups.sort(
-        key=lambda g: g.sessions[0].timestamp if g.sessions else "",
+        key=lambda g: max((s.timestamp for s in g.sessions), default=""),
         reverse=True,
     )
 

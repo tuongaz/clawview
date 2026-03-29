@@ -48,7 +48,7 @@ export function TaskNotificationContent({ text }: { text: string }) {
         <>
           <button
             onClick={() => setShowResult(!showResult)}
-            className="mt-1 text-xs text-[var(--accent-cyan)] hover:underline cursor-pointer bg-transparent border-none p-0"
+            className="mt-1 text-sm text-[var(--accent-cyan)] hover:underline cursor-pointer bg-transparent border-none p-0"
           >
             {showResult ? 'Hide details' : 'Show details'}
           </button>

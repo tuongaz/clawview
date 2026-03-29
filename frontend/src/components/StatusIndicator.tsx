@@ -56,7 +56,7 @@ export function TypingDots({ isWaiting }: { isWaiting: boolean }) {
         <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--text-secondary)]" style={{ animation: 'dot-blink 1.4s ease-in-out 0.2s infinite' }} />
         <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--text-secondary)]" style={{ animation: 'dot-blink 1.4s ease-in-out 0.4s infinite' }} />
       </div>
-      <span className="text-xs text-[var(--text-secondary)]">
+      <span className="text-sm text-[var(--text-secondary)]">
         {isWaiting ? 'Waiting for input\u2026' : 'Claude is working\u2026'}
       </span>
     </div>
@@ -66,7 +66,7 @@ export function TypingDots({ isWaiting }: { isWaiting: boolean }) {
 /** Small "Live" badge with pulsing dot. */
 export function LiveBadge() {
   return (
-    <span className="inline-flex items-center gap-1 text-xs font-normal text-success" style={PULSE_STYLE}>
+    <span className="inline-flex items-center gap-1 text-sm font-normal text-success" style={PULSE_STYLE}>
       <span className="inline-block w-1.5 h-1.5 rounded-full bg-success" />
       Live
     </span>

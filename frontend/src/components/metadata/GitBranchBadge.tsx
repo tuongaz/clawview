@@ -9,7 +9,7 @@ export function GitBranchBadge({ branch }: GitBranchBadgeProps) {
   return (
     <Tooltip>
       <Tooltip.Trigger>
-        <Chip size="sm" variant="secondary" className="bg-transparent border-0 text-[var(--text-secondary)] font-mono text-[11px] px-0 gap-1 max-w-[200px]">
+        <Chip size="sm" variant="secondary" className="bg-transparent border-0 text-[var(--text-secondary)] font-mono text-[13px] px-0 gap-1 max-w-[200px]">
           <GitBranchIcon />
           <span className="truncate">{branch}</span>
         </Chip>

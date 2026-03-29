@@ -14,11 +14,11 @@ function StatCard({ label, value, details, info }: StatCardProps) {
       <div className="absolute top-1.5 right-1.5">
         <InfoTip text={info} />
       </div>
-      <div className="text-[var(--text-secondary)] text-[11px] mb-1">{label}</div>
+      <div className="text-[var(--text-secondary)] text-[13px] mb-1">{label}</div>
       <div className="text-[var(--text-bright)] font-mono text-lg font-semibold">{value}</div>
       <div className="mt-1.5 space-y-0.5">
         {details.map((d, i) => (
-          <div key={i} className="text-[var(--text-secondary)] text-[11px] font-mono">{d}</div>
+          <div key={i} className="text-[var(--text-secondary)] text-[13px] font-mono">{d}</div>
         ))}
       </div>
     </div>

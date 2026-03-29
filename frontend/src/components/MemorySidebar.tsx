@@ -26,7 +26,7 @@ export function MemoryPanel() {
       title="Memory Files"
       footer={
         !loading && files.length > 0 ? (
-          <span className="text-[11px] text-[var(--text-secondary)]">
+          <span className="text-[13px] text-[var(--text-secondary)]">
             {files.length} memory file{files.length !== 1 ? 's' : ''}
           </span>
         ) : undefined
@@ -60,13 +60,13 @@ export function MemoryPanel() {
                     <ChevronRight size={14} className="text-[var(--text-secondary)] shrink-0" />
                   )}
                   <FileText size={14} className="text-[var(--accent-magenta)] shrink-0" />
-                  <span className="text-xs font-mono text-[var(--text-primary)] truncate">
+                  <span className="text-sm font-mono text-[var(--text-primary)] truncate">
                     {file.name}
                   </span>
                 </button>
                 {isExpanded && (
                   <div className="px-4 pb-3 pt-1 border-t border-[var(--border)] bg-[var(--bg-secondary)]">
-                    <div className="prose prose-invert prose-sm max-w-none text-xs [&_p]:text-xs [&_li]:text-xs [&_h1]:text-sm [&_h2]:text-xs [&_h3]:text-xs [&_code]:text-[11px] [&_pre]:text-[11px]">
+                    <div className="prose prose-invert prose-sm max-w-none text-sm [&_p]:text-sm [&_li]:text-sm [&_h1]:text-sm [&_h2]:text-sm [&_h3]:text-sm [&_code]:text-[13px] [&_pre]:text-[13px]">
                       <Markdown remarkPlugins={[remarkGfm, remarkBreaks]}>{file.content}</Markdown>
                     </div>
                   </div>

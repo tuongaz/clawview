@@ -9,7 +9,7 @@ export function ToolBarList({ items, color }: ToolBarListProps) {
     <div className="space-y-1.5">
       {items.map(([name, count]) => (
         <div key={name} className="flex items-center gap-2">
-          <span className="text-xs text-[var(--text-primary)] font-mono w-[140px] truncate shrink-0" title={name}>
+          <span className="text-sm text-[var(--text-primary)] font-mono w-[140px] truncate shrink-0" title={name}>
             {name}
           </span>
           <div className="flex-1 h-4 bg-white/5 rounded overflow-hidden">
@@ -21,7 +21,7 @@ export function ToolBarList({ items, color }: ToolBarListProps) {
               }}
             />
           </div>
-          <span className="text-xs text-[var(--text-secondary)] font-mono w-8 text-right shrink-0">{count}</span>
+          <span className="text-sm text-[var(--text-secondary)] font-mono w-8 text-right shrink-0">{count}</span>
         </div>
       ))}
     </div>

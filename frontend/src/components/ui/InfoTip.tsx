@@ -16,7 +16,7 @@ export function InfoTip({ text }: InfoTipProps) {
       <Popover.Content className="max-w-[220px]">
         <Popover.Dialog>
           <Popover.Arrow />
-          <p className="text-xs text-[var(--text-primary)] leading-relaxed">{text}</p>
+          <p className="text-sm text-[var(--text-primary)] leading-relaxed">{text}</p>
         </Popover.Dialog>
       </Popover.Content>
     </Popover>

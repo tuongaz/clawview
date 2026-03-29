@@ -10,7 +10,7 @@ interface MetadataFieldProps {
 export function MetadataField({ label, info, children }: MetadataFieldProps) {
   return (
     <div>
-      <span className="text-[var(--text-secondary)] text-xs mb-1 flex items-center gap-1">
+      <span className="text-[var(--text-secondary)] text-sm mb-1 flex items-center gap-1">
         {label}
         {info && <InfoTip text={info} />}
       </span>

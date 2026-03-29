@@ -49,7 +49,7 @@ export function ThemedChip({ color, children, className = '', interactive, onCli
     <Chip
       size="sm"
       variant="soft"
-      className={`font-mono text-[11px] ${s.text} ${s.bg} border ${s.border} gap-1 ${hover} ${className}`}
+      className={`font-mono text-[13px] ${s.text} ${s.bg} border ${s.border} gap-1 ${hover} ${className}`}
       onClick={onClick}
     >
       {children}

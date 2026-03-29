@@ -14,7 +14,7 @@ export function StatBox({ label, value, info }: StatBoxProps) {
           <InfoTip text={info} />
         </div>
       )}
-      <div className="text-[var(--text-secondary)] text-[11px] mb-1">{label}</div>
+      <div className="text-[var(--text-secondary)] text-[13px] mb-1">{label}</div>
       <div className="text-[var(--text-bright)] font-mono text-base font-semibold">{value}</div>
     </div>
   )

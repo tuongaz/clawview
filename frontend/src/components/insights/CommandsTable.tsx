@@ -103,12 +103,12 @@ export function CommandsTable({ commandDetails }: CommandsTableProps) {
       : <ChevronDown size={12} className="opacity-80" />
   }
 
-  const thClass = 'px-3 py-2 text-left text-[11px] font-medium text-[var(--text-secondary)] cursor-pointer select-none whitespace-nowrap hover:text-[var(--text-primary)] transition-colors'
+  const thClass = 'px-3 py-2 text-left text-[13px] font-medium text-[var(--text-secondary)] cursor-pointer select-none whitespace-nowrap hover:text-[var(--text-primary)] transition-colors'
 
   return (
     <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg">
       <div className="px-4 pt-4 pb-3">
-        <h3 className="text-[var(--text-secondary)] text-xs font-medium mb-3">Command Details</h3>
+        <h3 className="text-[var(--text-secondary)] text-sm font-medium mb-3">Command Details</h3>
 
         {/* Controls */}
         <div className="flex items-center gap-3 flex-wrap">
@@ -119,7 +119,7 @@ export function CommandsTable({ commandDetails }: CommandsTableProps) {
               placeholder="Search commands…"
               value={search}
               onChange={e => handleSearchChange(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 text-xs font-mono bg-[var(--bg-primary)] border border-[var(--border)] rounded text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] placeholder:opacity-50 focus:outline-none focus:border-[var(--accent-cyan)]"
+              className="w-full pl-8 pr-3 py-1.5 text-sm font-mono bg-[var(--bg-primary)] border border-[var(--border)] rounded text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] placeholder:opacity-50 focus:outline-none focus:border-[var(--accent-cyan)]"
             />
           </div>
 
@@ -128,7 +128,7 @@ export function CommandsTable({ commandDetails }: CommandsTableProps) {
               <button
                 key={f}
                 onClick={() => handleFilterChange(f)}
-                className={`px-2.5 py-1 text-[11px] rounded transition-colors ${
+                className={`px-2.5 py-1 text-[13px] rounded transition-colors ${
                   interruptFilter === f
                     ? 'bg-[var(--accent-cyan)] bg-opacity-20 text-[var(--accent-cyan)] border border-[rgba(88,166,255,0.3)]'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-transparent'
@@ -139,7 +139,7 @@ export function CommandsTable({ commandDetails }: CommandsTableProps) {
             ))}
           </div>
 
-          <span className="text-[var(--text-secondary)] text-[11px] ml-auto">
+          <span className="text-[var(--text-secondary)] text-[13px] ml-auto">
             {sorted.length} command{sorted.length !== 1 ? 's' : ''}
           </span>
         </div>
@@ -185,7 +185,7 @@ export function CommandsTable({ commandDetails }: CommandsTableProps) {
             })}
             {pageRows.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-3 py-8 text-center text-[var(--text-secondary)] text-xs">
+                <td colSpan={6} className="px-3 py-8 text-center text-[var(--text-secondary)] text-sm">
                   No commands match your filters
                 </td>
               </tr>
@@ -197,7 +197,7 @@ export function CommandsTable({ commandDetails }: CommandsTableProps) {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--border)]">
-          <span className="text-[var(--text-secondary)] text-[11px]">
+          <span className="text-[var(--text-secondary)] text-[13px]">
             Page {safePage + 1} of {totalPages}
           </span>
           <div className="flex items-center gap-1">
@@ -234,22 +234,22 @@ function CommandRow({ cmd, isExpanded, onToggle }: { cmd: CommandDetail; isExpan
         <td className={`${tdClass} !whitespace-normal min-w-[200px] max-w-[400px]`}>
           <div className="flex flex-col gap-0.5">
             <span className="text-[var(--text-primary)] leading-snug">{truncate(cmd.user_message, 120)}</span>
-            <span className="text-[var(--text-secondary)] text-[10px] opacity-70">{fmtTimestamp(cmd.timestamp)}</span>
+            <span className="text-[var(--text-secondary)] text-[12px] opacity-70">{fmtTimestamp(cmd.timestamp)}</span>
           </div>
         </td>
         <td className={tdClass}>
-          <span className="text-[var(--accent-cyan)] text-[11px]">{shortenModel(cmd.model)}</span>
+          <span className="text-[var(--accent-cyan)] text-[13px]">{shortenModel(cmd.model)}</span>
         </td>
         <td className={`${tdClass} text-center`}>{cmd.steps}</td>
         <td className={`${tdClass} text-center`}>{cmd.tools_count}</td>
         <td className={tdClass}>{fmtTokens(cmd.tokens)}</td>
         <td className={tdClass}>
           {cmd.interrupted ? (
-            <span className="inline-block px-1.5 py-0.5 text-[10px] rounded bg-[rgba(239,68,68,0.15)] text-[#ef4444] border border-[rgba(239,68,68,0.25)]">
+            <span className="inline-block px-1.5 py-0.5 text-[12px] rounded bg-[rgba(239,68,68,0.15)] text-[#ef4444] border border-[rgba(239,68,68,0.25)]">
               Interrupted
             </span>
           ) : (
-            <span className="inline-block px-1.5 py-0.5 text-[10px] rounded bg-[rgba(72,187,120,0.1)] text-[#48bb78] border border-[rgba(72,187,120,0.2)]">
+            <span className="inline-block px-1.5 py-0.5 text-[12px] rounded bg-[rgba(72,187,120,0.1)] text-[#48bb78] border border-[rgba(72,187,120,0.2)]">
               Complete
             </span>
           )}
@@ -260,19 +260,19 @@ function CommandRow({ cmd, isExpanded, onToggle }: { cmd: CommandDetail; isExpan
           <td colSpan={6} className="px-4 py-3 bg-[var(--bg-primary)]">
             <div className="space-y-2">
               <div>
-                <div className="text-[var(--text-secondary)] text-[10px] font-medium mb-1">Full Message</div>
+                <div className="text-[var(--text-secondary)] text-[12px] font-medium mb-1">Full Message</div>
                 <div className="text-[var(--text-primary)] text-[12px] font-mono whitespace-pre-wrap break-words leading-relaxed max-h-[200px] overflow-y-auto">
                   {cmd.user_message}
                 </div>
               </div>
               {cmd.tool_names.length > 0 && (
                 <div>
-                  <div className="text-[var(--text-secondary)] text-[10px] font-medium mb-1">Tools Used</div>
+                  <div className="text-[var(--text-secondary)] text-[12px] font-medium mb-1">Tools Used</div>
                   <div className="flex flex-wrap gap-1">
                     {cmd.tool_names.map((t, i) => (
                       <span
                         key={i}
-                        className="inline-block px-1.5 py-0.5 text-[10px] font-mono rounded bg-[rgba(118,75,162,0.12)] text-[#a78bfa] border border-[rgba(118,75,162,0.25)]"
+                        className="inline-block px-1.5 py-0.5 text-[12px] font-mono rounded bg-[rgba(118,75,162,0.12)] text-[#a78bfa] border border-[rgba(118,75,162,0.25)]"
                       >
                         {t}
                       </span>

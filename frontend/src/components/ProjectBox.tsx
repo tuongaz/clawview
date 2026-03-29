@@ -34,12 +34,12 @@ export function ProjectBox({ group, displayName }: ProjectBoxProps) {
             <span className="font-mono text-lg font-bold text-[var(--text-bright)] whitespace-nowrap">
               {name}
             </span>
-            <span className="font-mono text-[11px] text-[var(--text-secondary)] overflow-hidden text-ellipsis whitespace-nowrap">
+            <span className="font-mono text-[15px] text-[var(--text-secondary)] overflow-hidden text-ellipsis whitespace-nowrap">
               {group.path}
             </span>
           </div>
           <div className="flex items-center gap-3 ml-auto shrink-0">
-            <span className="font-mono text-[13px] text-[var(--text-secondary)] whitespace-nowrap">
+            <span className="font-mono text-[15px] text-[var(--text-secondary)] whitespace-nowrap">
               {group.sessions.length} session{group.sessions.length !== 1 ? 's' : ''}
               {hasActive && ` · ${activeSessions.length} active`}
             </span>
@@ -47,7 +47,7 @@ export function ProjectBox({ group, displayName }: ProjectBoxProps) {
               <Button
                 variant="outline"
                 size="sm"
-                className="font-mono text-xs text-[var(--text-secondary)] border-[var(--border)] hover:text-[var(--text-primary)] hover:border-[var(--accent-cyan)]"
+                className="font-mono text-sm text-[var(--text-secondary)] border-[var(--border)] hover:text-[var(--text-primary)] hover:border-[var(--accent-cyan)]"
                 onPress={() => setExpanded(true)}
               >
                 Show {hiddenCount} more
@@ -57,7 +57,7 @@ export function ProjectBox({ group, displayName }: ProjectBoxProps) {
               <Button
                 variant="outline"
                 size="sm"
-                className="font-mono text-xs text-[var(--text-secondary)] border-[var(--border)] hover:text-[var(--text-primary)] hover:border-[var(--accent-cyan)]"
+                className="font-mono text-sm text-[var(--text-secondary)] border-[var(--border)] hover:text-[var(--text-primary)] hover:border-[var(--accent-cyan)]"
                 onPress={() => setExpanded(false)}
               >
                 Show less
@@ -66,7 +66,7 @@ export function ProjectBox({ group, displayName }: ProjectBoxProps) {
             <Button
               variant="outline"
               size="sm"
-              className="font-mono text-xs text-[var(--accent-cyan)] border-[var(--accent-cyan)]/30 hover:bg-[var(--accent-cyan)]/10 hover:border-[var(--accent-cyan)]"
+              className="font-mono text-sm text-[var(--accent-cyan)] border-[var(--accent-cyan)]/30 hover:bg-[var(--accent-cyan)]/10 hover:border-[var(--accent-cyan)]"
               onPress={() => navigate(`/insights/${encodeURIComponent(group.projectName)}`)}
             >
               Insights

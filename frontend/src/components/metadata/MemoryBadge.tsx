@@ -12,7 +12,7 @@ export function MemoryBadge({ interactive, onClick, label = 'Memory' }: MemoryBa
   return (
     <Tooltip>
       <Tooltip.Trigger>
-        <ThemedChip color="magenta" interactive={interactive} onClick={onClick} className="text-[10px]">
+        <ThemedChip color="magenta" interactive={interactive} onClick={onClick} className="text-[12px]">
           <Brain size={12} /> {label}
         </ThemedChip>
       </Tooltip.Trigger>
