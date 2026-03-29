@@ -16,6 +16,22 @@ from clawlens.models import MemoryFile, Message, ProjectGroup, Session, SessionD
 
 logger = logging.getLogger(__name__)
 
+# Regex to strip ANSI escape sequences (CSI, OSC, and other ESC sequences).
+_ANSI_RE = re.compile(
+    r"\x1b"        # ESC character
+    r"(?:"
+    r"\[[0-9;]*[A-Za-z]"   # CSI sequences: ESC [ ... letter
+    r"|\][^\x07\x1b]*(?:\x07|\x1b\\)"  # OSC sequences: ESC ] ... BEL/ST
+    r"|\([A-Za-z]"          # Character set: ESC ( letter
+    r"|[A-Za-z]"            # Two-char sequences: ESC letter
+    r")"
+)
+
+
+def _strip_ansi(text: str) -> str:
+    return _ANSI_RE.sub("", text)
+
+
 # ---------------------------------------------------------------------------
 # Model context limits
 # ---------------------------------------------------------------------------
@@ -186,10 +202,18 @@ def load_skill_content(session_id: str, skill_name: str) -> str | None:
 # ---------------------------------------------------------------------------
 
 _RE_COMMAND_NAME = re.compile(r"<command-name>\s*(.*?)\s*</command-name>")
+_RE_LOCAL_CMD_STDOUT = re.compile(
+    r"<local-command-stdout>\s*(.*?)\s*</local-command-stdout>", re.DOTALL
+)
 
 
 def clean_command_text(s: str) -> str:
     """Extract slash command from XML-tagged user messages, or return as-is."""
+    # Unwrap <local-command-stdout>...</local-command-stdout> wrapper.
+    m = _RE_LOCAL_CMD_STDOUT.search(s)
+    if m:
+        s = m.group(1)
+
     m = _RE_COMMAND_NAME.search(s)
     if m is None:
         return s
@@ -242,7 +266,7 @@ def extract_user_text(content: object) -> str:
     if isinstance(content, str):
         if _is_system_boilerplate(content):
             return ""
-        return clean_command_text(content)
+        return _strip_ansi(clean_command_text(content))
 
     # Sometimes content is an array of parts.
     if isinstance(content, list):
@@ -251,7 +275,7 @@ def extract_user_text(content: object) -> str:
                 if part.get("type") == "text":
                     text = part.get("text")
                     if isinstance(text, str) and not _is_system_boilerplate(text):
-                        return clean_command_text(text)
+                        return _strip_ansi(clean_command_text(text))
 
     return ""
 
@@ -615,7 +639,7 @@ def parse_session_detail(fpath: str) -> SessionDetail | None:
                         current_turn.events.append(
                             TurnEvent(
                                 kind="text",
-                                text=content.strip(),
+                                text=_strip_ansi(content.strip()),
                             )
                         )
                     elif isinstance(content, list):
@@ -627,7 +651,7 @@ def parse_session_detail(fpath: str) -> SessionDetail | None:
                             if ptype == "text":
                                 t = part.get("text", "")
                                 if isinstance(t, str) and t.strip():
-                                    text_parts.append(t.strip())
+                                    text_parts.append(_strip_ansi(t.strip()))
                             elif ptype == "tool_use":
                                 # Flush accumulated text before tool.
                                 if text_parts:
