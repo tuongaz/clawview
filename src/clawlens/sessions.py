@@ -11,7 +11,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-from clawlens.ide import load_ide_map
+from clawlens.ide import load_ide_pid_map, resolve_client_for_pid
 from clawlens.models import MemoryFile, Message, ProjectGroup, Session, SessionDetail, Turn, TurnEvent
 
 logger = logging.getLogger(__name__)
@@ -770,11 +770,10 @@ def enrich_session_detail(detail: SessionDetail, fpath: str) -> None:
     )
 
     ide_dir = os.path.join(home, ".claude", "ide")
-    ide_map = load_ide_map(ide_dir)
-    for folder, client in ide_map.items():
-        if detail.cwd == folder or detail.cwd.startswith(folder + os.sep):
-            detail.client = client
-            break
+    ide_pid_map = load_ide_pid_map(ide_dir)
+    session_pid = active_info.session_pids.get(detail.session_id)
+    if session_pid:
+        detail.client = resolve_client_for_pid(session_pid, ide_pid_map)
 
     dir_name = os.path.basename(os.path.dirname(fpath))
     detail.project_name = decode_project_path(dir_name)
@@ -815,6 +814,7 @@ class ActiveInfo:
     """Active session detection data."""
 
     session_ids: set[str]
+    session_pids: dict[str, int]  # session_id -> pid
 
 
 def _load_active_info(home: str) -> ActiveInfo:
@@ -828,7 +828,7 @@ def _load_active_info(home: str) -> ActiveInfo:
     file), resolves the actual session by finding the most recently modified
     JSONL file updated after the process started.
     """
-    info = ActiveInfo(session_ids=set())
+    info = ActiveInfo(session_ids=set(), session_pids={})
     sessions_dir = os.path.join(home, ".claude", "sessions")
 
     try:
@@ -871,6 +871,7 @@ def _load_active_info(home: str) -> ActiveInfo:
     unresolved_started_ats: list[float] = []
 
     # For each PID, only keep the most recently modified registry entry.
+    unresolved: list[tuple[float, int]] = []  # (started_at, pid)
     for pid, elist in pid_entries.items():
         elist.sort(reverse=True)  # newest first by mod_time
         _, session_id, started_at = elist[0]
@@ -880,10 +881,11 @@ def _load_active_info(home: str) -> ActiveInfo:
         matches = glob.glob(pattern)
         if matches:
             info.session_ids.add(session_id)
+            info.session_pids[session_id] = pid
             matched_jsonls.update(matches)
         else:
             # Resumed session – registry ID doesn't match any JSONL file.
-            unresolved_started_ats.append(started_at)
+            unresolved.append((started_at, pid))
 
     # Resolve resumed sessions by finding JSONL files modified after
     # the process started (excluding files already matched to other PIDs).
@@ -891,10 +893,10 @@ def _load_active_info(home: str) -> ActiveInfo:
     # written to recently — this handles cases where the process is alive but
     # the session was closed (e.g. process didn't exit cleanly).
     _STALE_THRESHOLD = 300  # 5 minutes
-    if unresolved_started_ats:
+    if unresolved:
         now = time.time()
         all_jsonl = glob.glob(os.path.join(projects_dir, "*", "*.jsonl"))
-        for started_at in unresolved_started_ats:
+        for started_at, pid in unresolved:
             best: tuple[float, str, str] | None = None  # (mtime, session_id, path)
             for jpath in all_jsonl:
                 if jpath in matched_jsonls:
@@ -912,6 +914,7 @@ def _load_active_info(home: str) -> ActiveInfo:
 
             if best is not None:
                 info.session_ids.add(best[1])
+                info.session_pids[best[1]] = pid
                 matched_jsonls.add(best[2])
 
     return info
@@ -932,7 +935,7 @@ def load_grouped_sessions(limit: int = 0) -> list[ProjectGroup]:
     home = os.path.expanduser("~")
 
     ide_dir = os.path.join(home, ".claude", "ide")
-    ide_map = load_ide_map(ide_dir)
+    ide_pid_map = load_ide_pid_map(ide_dir)
     active_info = _load_active_info(home)
     now = time.time()
 
@@ -974,10 +977,9 @@ def load_grouped_sessions(limit: int = 0) -> list[ProjectGroup]:
         dir_name = os.path.basename(os.path.dirname(fpath))
         sess.project_name = decode_project_path(dir_name)
 
-        for folder, client in ide_map.items():
-            if sess.cwd == folder or sess.cwd.startswith(folder + os.sep):
-                sess.client = client
-                break
+        session_pid = active_info.session_pids.get(sess.session_id)
+        if session_pid:
+            sess.client = resolve_client_for_pid(session_pid, ide_pid_map)
 
         project_map.setdefault(dir_name, []).append(sess)
 
