@@ -160,25 +160,21 @@ export function MermaidDiagram({ code }: { code: string }) {
         )}
       </div>
 
-      {/* Content */}
-      {tab === 'diagram' && (
-        <div className="p-4 overflow-auto">
-          {loading && (
-            <div className="text-sm text-[var(--text-secondary)] py-2">Rendering diagram...</div>
-          )}
-          <div
-            ref={containerRef}
-            className="flex justify-center [&_svg]:max-w-full origin-top-left transition-transform duration-150"
-            style={{ transform: `scale(${zoom})` }}
-          />
-        </div>
-      )}
+      {/* Content — both views stay mounted to preserve rendered SVG */}
+      <div className={`p-4 overflow-auto ${tab !== 'diagram' ? 'hidden' : ''}`}>
+        {loading && (
+          <div className="text-sm text-[var(--text-secondary)] py-2">Rendering diagram...</div>
+        )}
+        <div
+          ref={containerRef}
+          className="flex justify-center [&_svg]:max-w-full origin-top-left transition-transform duration-150"
+          style={{ transform: `scale(${zoom})` }}
+        />
+      </div>
 
-      {tab === 'source' && (
-        <div className="p-4 overflow-auto">
-          <pre className="text-sm text-[var(--text-primary)] font-mono whitespace-pre-wrap m-0">{code}</pre>
-        </div>
-      )}
+      <div className={`p-4 overflow-auto ${tab !== 'source' ? 'hidden' : ''}`}>
+        <pre className="text-sm text-[var(--text-primary)] font-mono whitespace-pre-wrap m-0">{code}</pre>
+      </div>
     </div>
   )
 }
