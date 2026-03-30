@@ -51,27 +51,36 @@ export function TurnTimeline({ turns, isActive, onRequestShowAll }: TurnTimeline
     return () => el.removeEventListener('wheel', onWheel)
   }, [])
 
-  // Click-and-drag scrolling
+  // Click-and-drag scrolling (5px threshold to avoid stealing clicks)
+  const pointerDownRef = useRef(false)
+
   const onPointerDown = useCallback((e: React.PointerEvent) => {
-    const el = scrollRef.current
-    if (!el) return
-    isDraggingRef.current = true
+    pointerDownRef.current = true
+    isDraggingRef.current = false
     dragStartXRef.current = e.clientX
-    dragScrollLeftRef.current = el.scrollLeft
-    el.setPointerCapture(e.pointerId)
-    el.style.cursor = 'grabbing'
+    dragScrollLeftRef.current = scrollRef.current?.scrollLeft ?? 0
   }, [])
 
   const onPointerMove = useCallback((e: React.PointerEvent) => {
-    if (!isDraggingRef.current || !scrollRef.current) return
+    if (!pointerDownRef.current || !scrollRef.current) return
     const dx = e.clientX - dragStartXRef.current
-    scrollRef.current.scrollLeft = dragScrollLeftRef.current - dx
+    if (!isDraggingRef.current && Math.abs(dx) > 5) {
+      isDraggingRef.current = true
+      scrollRef.current.setPointerCapture(e.pointerId)
+      scrollRef.current.style.cursor = 'grabbing'
+    }
+    if (isDraggingRef.current) {
+      scrollRef.current.scrollLeft = dragScrollLeftRef.current - dx
+    }
   }, [])
 
   const onPointerUp = useCallback((e: React.PointerEvent) => {
+    pointerDownRef.current = false
     isDraggingRef.current = false
-    if (scrollRef.current) scrollRef.current.style.cursor = ''
-    scrollRef.current?.releasePointerCapture(e.pointerId)
+    if (scrollRef.current) {
+      scrollRef.current.style.cursor = ''
+      try { scrollRef.current.releasePointerCapture(e.pointerId) } catch {}
+    }
   }, [])
 
   // Track which TurnCard is currently in view using a stable visibility map
@@ -135,14 +144,14 @@ export function TurnTimeline({ turns, isActive, onRequestShowAll }: TurnTimeline
   if (turns.length === 0) return null
 
   return (
-    <div className="bg-[var(--bg-secondary)] border-b border-[var(--border)]">
+    <div className="py-4 px-8 max-sm:px-4 max-w-[1400px] 2xl:max-w-[1800px] mx-auto">
       <div
         ref={scrollRef}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        className="flex items-center gap-1 px-8 py-3 max-sm:px-4 overflow-x-auto max-w-[1400px] 2xl:max-w-[1800px] mx-auto cursor-grab select-none [&::-webkit-scrollbar]:hidden"
+        className="inline-flex items-center gap-1 px-4 py-3 overflow-x-auto max-w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl cursor-grab select-none [&::-webkit-scrollbar]:hidden"
         style={{ scrollbarWidth: 'none' }}
       >
         {turns.map((turn, i) => {
@@ -181,7 +190,7 @@ export function TurnTimeline({ turns, isActive, onRequestShowAll }: TurnTimeline
                 </div>
                 <span className={`text-[11px] font-mono leading-none whitespace-nowrap
                   ${isCurrent ? 'text-[var(--accent-cyan)]' : 'text-[var(--text-secondary)] opacity-60'}`}>
-                  {formatRelativeTime(turnMs)}
+                  {formatRelativeTime(turn.durationMs)}
                 </span>
               </button>
 
