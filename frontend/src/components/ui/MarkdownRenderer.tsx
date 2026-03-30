@@ -3,8 +3,9 @@ import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkBreaks from 'remark-breaks'
 import { MermaidDiagram } from './MermaidDiagram'
+import { DiagraphDiagram } from './DiagraphDiagram'
 
-const DIAGRAM_LANGUAGES = new Set(['mermaid'])
+const DIAGRAM_LANGUAGES = new Set(['mermaid', 'diagraph'])
 
 const components: Components = {
   pre({ children, ...props }) {
@@ -27,6 +28,9 @@ const components: Components = {
         const code = String(child.props?.children ?? '').trim()
         if (lang === 'mermaid') {
           return <MermaidDiagram code={code} />
+        }
+        if (lang === 'diagraph') {
+          return <DiagraphDiagram code={code} />
         }
       }
     }
