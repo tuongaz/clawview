@@ -66,7 +66,7 @@ export function MemoryPanel() {
                 </button>
                 {isExpanded && (
                   <div className="px-4 pb-3 pt-1 border-t border-[var(--border)] bg-[var(--bg-secondary)]">
-                    <div className="prose prose-invert prose-sm max-w-none text-base [&_p]:text-base [&_li]:text-base [&_h1]:text-base [&_h2]:text-base [&_h3]:text-base [&_code]:text-sm [&_pre]:text-sm">
+                    <div className="prose prose-invert prose-base max-w-none text-base [&_p]:text-base [&_li]:text-base [&_h1]:text-base [&_h2]:text-base [&_h3]:text-base [&_code]:text-sm [&_pre]:text-sm">
                       <Markdown remarkPlugins={[remarkGfm, remarkBreaks]}>{file.content}</Markdown>
                     </div>
                   </div>

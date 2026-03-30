@@ -132,7 +132,7 @@ export function SessionDetailPage() {
               <MetadataField label="Memory" info="Whether Claude's persistent memory system is enabled for this project.">
                 <Link to={`/session/${detail.sessionId}/memory`}>
                   <ThemedChip color="magenta" interactive className="text-sm">
-                    <Brain size={12} /> Memory Enabled
+                    <Brain size={14} /> Memory Enabled
                   </ThemedChip>
                 </Link>
               </MetadataField>

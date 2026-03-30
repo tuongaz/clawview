@@ -10,7 +10,7 @@ export function InfoTip({ text }: InfoTipProps) {
     <Popover>
       <Popover.Trigger>
         <button type="button" className="inline-flex items-center cursor-pointer text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors bg-transparent border-none p-0">
-          <Info size={12} />
+          <Info size={14} />
         </button>
       </Popover.Trigger>
       <Popover.Content className="max-w-[220px]">

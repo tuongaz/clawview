@@ -15,7 +15,7 @@ export function StatBox({ label, value, info }: StatBoxProps) {
         </div>
       )}
       <div className="text-[var(--text-secondary)] text-sm mb-1">{label}</div>
-      <div className="text-[var(--text-bright)] font-mono text-base font-semibold">{value}</div>
+      <div className="text-[var(--text-bright)] font-mono text-lg font-semibold">{value}</div>
     </div>
   )
 }

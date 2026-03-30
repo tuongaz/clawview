@@ -24,7 +24,7 @@ export function TaskNotificationContent({ text }: { text: string }) {
   const parsed = useMemo(() => parseTaskNotification(text), [text])
   const [showResult, setShowResult] = useState(false)
 
-  const mdClass = "prose prose-invert prose-sm max-w-none min-w-0"
+  const mdClass = "prose prose-invert prose-base max-w-none min-w-0"
 
   if (!parsed) {
     return (
