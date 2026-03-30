@@ -86,7 +86,7 @@ export function SessionDetailPage() {
         </div>
       </div>
 
-<div className="px-8 py-6 max-sm:px-4 max-sm:py-4 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
+<div className="px-8 py-6 max-sm:px-4 max-sm:py-4 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-10">
         {/* Left: Conversation */}
         <div className="order-2 lg:order-1 min-w-0">
           {detail.turns.length > 0 ? (
