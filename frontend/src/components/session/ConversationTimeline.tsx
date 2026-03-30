@@ -202,7 +202,7 @@ export function ConversationTimeline({ turns, isActive, showAll, onShowAll }: Co
               </div>
               {/* Turn card */}
               <div className="flex-1 min-w-0 pb-2">
-                <TurnCard turn={turn} isFirst={turn.index === 1} defaultExpanded={allExpanded} showWorking={isActive && isLast} />
+                <TurnCard turn={turn} isFirst={turn.index === 1} defaultExpanded={allExpanded} showWorking={isActive && isLast && (Date.now() - new Date(turn.timestamp).getTime()) < 5 * 60 * 1000} />
               </div>
             </div>
           )

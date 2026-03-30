@@ -85,7 +85,6 @@ export function TurnCard({ turn, isFirst, defaultExpanded, showWorking }: TurnCa
                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--text-secondary)]" style={{ animation: 'dot-blink 1.4s ease-in-out 0.2s infinite' }} />
                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--text-secondary)]" style={{ animation: 'dot-blink 1.4s ease-in-out 0.4s infinite' }} />
               </div>
-              <span className="text-base">Claude is working…</span>
             </div>
           )}
         </div>
