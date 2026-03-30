@@ -124,7 +124,7 @@ export function ConversationTimeline({ turns, isActive, showAll, onShowAll }: Co
           const showPulse = isActive && isLast
           const isCurrent = activeTurnIndex === turn.index
           return (
-            <div key={`${turn.index}-${expandKey}`} className="flex gap-3">
+            <div key={`${turn.index}-${expandKey}`} className="flex gap-6">
               {/* Timeline column */}
               <div className="flex flex-col items-center shrink-0">
                 <div className="sticky top-[60px] z-10 pt-3 flex flex-col items-center">
