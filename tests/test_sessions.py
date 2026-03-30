@@ -21,12 +21,27 @@ from clawlens.sessions import (
 # ---------------------------------------------------------------------------
 
 
-def test_known_model_context_limit() -> None:
-    assert get_model_context_limit("claude-opus-4-6") == 1_000_000
+def test_bracket_suffix_1m() -> None:
+    assert get_model_context_limit("claude-sonnet-4-6[1m]") == 1_000_000
 
 
-def test_unknown_model_falls_back_to_default() -> None:
-    assert get_model_context_limit("unknown-model-xyz") == 1_000_000
+def test_bracket_suffix_200k() -> None:
+    assert get_model_context_limit("claude-sonnet-4-6[200k]") == 200_000
+
+
+def test_no_bracket_falls_back_to_env(monkeypatch: object) -> None:
+    monkeypatch.setenv("ANTHROPIC_MODEL", "claude-sonnet-4-6[1m]")  # type: ignore[attr-defined]
+    assert get_model_context_limit("claude-sonnet-4-6") == 1_000_000
+
+
+def test_no_bracket_no_env_falls_back_to_default(monkeypatch: object) -> None:
+    monkeypatch.delenv("ANTHROPIC_MODEL", raising=False)  # type: ignore[attr-defined]
+    assert get_model_context_limit("claude-sonnet-4-6") == 1_000_000
+
+
+def test_empty_model_falls_back_to_default(monkeypatch: object) -> None:
+    monkeypatch.delenv("ANTHROPIC_MODEL", raising=False)  # type: ignore[attr-defined]
+    assert get_model_context_limit("") == 1_000_000
 
 
 # ---------------------------------------------------------------------------

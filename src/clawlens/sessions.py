@@ -37,18 +37,43 @@ def _strip_ansi(text: str) -> str:
 # Model context limits
 # ---------------------------------------------------------------------------
 
-_MODEL_CONTEXT_LIMITS: dict[str, int] = {
-    "claude-opus-4-6": 1_000_000,
-    "claude-sonnet-4-6": 200_000,
-    "claude-haiku-4-5-20251001": 200_000,
-}
-
 _DEFAULT_CONTEXT_LIMIT = 1_000_000
+
+_CONTEXT_BRACKET_RE = re.compile(r"\[(\d+)(k|m)\]", re.IGNORECASE)
+
+
+def _parse_context_from_model(model: str) -> int | None:
+    """Extract context limit from a bracket suffix like ``[1m]`` or ``[200k]``."""
+    match = _CONTEXT_BRACKET_RE.search(model)
+    if not match:
+        return None
+    value = int(match.group(1))
+    unit = match.group(2).lower()
+    if unit == "m":
+        return value * 1_000_000
+    return value * 1_000
 
 
 def get_model_context_limit(model: str) -> int:
-    """Return the context window size for a given model name."""
-    return _MODEL_CONTEXT_LIMITS.get(model, _DEFAULT_CONTEXT_LIMIT)
+    """Return the context window size for a given model name.
+
+    Resolution order:
+    1. Bracket suffix in the session model string (e.g. ``claude-sonnet-4-6[1m]``)
+    2. ``ANTHROPIC_MODEL`` env var bracket suffix
+    3. Default: 1M tokens
+    """
+    if model:
+        limit = _parse_context_from_model(model)
+        if limit is not None:
+            return limit
+
+    env_model = os.environ.get("ANTHROPIC_MODEL", "")
+    if env_model:
+        limit = _parse_context_from_model(env_model)
+        if limit is not None:
+            return limit
+
+    return _DEFAULT_CONTEXT_LIMIT
 
 
 def find_session_file(session_id: str) -> str | None:
