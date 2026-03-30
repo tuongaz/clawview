@@ -1,11 +1,8 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Brain, FileText, ChevronDown, ChevronRight } from 'lucide-react'
-import Markdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import remarkBreaks from 'remark-breaks'
 import { useMemoryFiles } from '../hooks/useMemoryFiles'
-import { ErrorAlert, EmptyState } from './ui'
+import { ErrorAlert, EmptyState, MarkdownRenderer } from './ui'
 import { Sidebar } from './Sidebar'
 
 export function MemoryPanel() {
@@ -66,9 +63,7 @@ export function MemoryPanel() {
                 </button>
                 {isExpanded && (
                   <div className="px-4 pb-3 pt-1 border-t border-[var(--border)] bg-[var(--bg-secondary)]">
-                    <div className="prose prose-invert prose-base max-w-none text-base [&_p]:text-base [&_li]:text-base [&_h1]:text-base [&_h2]:text-base [&_h3]:text-base [&_code]:text-sm [&_pre]:text-sm">
-                      <Markdown remarkPlugins={[remarkGfm, remarkBreaks]}>{file.content}</Markdown>
-                    </div>
+                    <MarkdownRenderer className="prose prose-invert prose-base max-w-none text-base [&_p]:text-base [&_li]:text-base [&_h1]:text-base [&_h2]:text-base [&_h3]:text-base [&_code]:text-sm [&_pre]:text-sm">{file.content}</MarkdownRenderer>
                   </div>
                 )}
               </div>

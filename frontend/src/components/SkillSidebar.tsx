@@ -1,10 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Sparkles } from 'lucide-react'
-import Markdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import remarkBreaks from 'remark-breaks'
-import { ErrorAlert } from './ui'
+import { ErrorAlert, MarkdownRenderer } from './ui'
 import { Sidebar } from './Sidebar'
 
 export function SkillPanel() {
@@ -56,9 +53,7 @@ export function SkillPanel() {
       {error && <ErrorAlert message={error} />}
 
       {!loading && !error && content != null && (
-        <div className="prose prose-invert prose-base max-w-none text-base [&_p]:text-base [&_li]:text-base [&_h1]:text-base [&_h2]:text-base [&_h3]:text-base [&_code]:text-sm [&_pre]:text-sm">
-          <Markdown remarkPlugins={[remarkGfm, remarkBreaks]}>{content}</Markdown>
-        </div>
+        <MarkdownRenderer className="prose prose-invert prose-base max-w-none text-base [&_p]:text-base [&_li]:text-base [&_h1]:text-base [&_h2]:text-base [&_h3]:text-base [&_code]:text-sm [&_pre]:text-sm">{content}</MarkdownRenderer>
       )}
     </Sidebar>
   )

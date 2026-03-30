@@ -1,7 +1,5 @@
 import { useState, useMemo } from 'react'
-import Markdown from 'react-markdown'
-import remarkBreaks from 'remark-breaks'
-import remarkGfm from 'remark-gfm'
+import { MarkdownRenderer } from '../ui'
 
 function parseTaskNotification(text: string): { before: string; summary: string; result: string; after: string } | null {
   const tnMatch = text.match(/<task-notification>([\s\S]*?)<\/task-notification>/)
@@ -28,22 +26,16 @@ export function TaskNotificationContent({ text }: { text: string }) {
 
   if (!parsed) {
     return (
-      <div className={mdClass}>
-        <Markdown remarkPlugins={[remarkGfm, remarkBreaks]}>{text}</Markdown>
-      </div>
+      <MarkdownRenderer className={mdClass}>{text}</MarkdownRenderer>
     )
   }
 
   return (
     <div className="min-w-0">
       {parsed.before && (
-        <div className={`${mdClass} mb-1`}>
-          <Markdown remarkPlugins={[remarkGfm, remarkBreaks]}>{parsed.before}</Markdown>
-        </div>
+        <MarkdownRenderer className={`${mdClass} mb-1`}>{parsed.before}</MarkdownRenderer>
       )}
-      <div className={mdClass}>
-        <Markdown remarkPlugins={[remarkGfm, remarkBreaks]}>{parsed.summary}</Markdown>
-      </div>
+      <MarkdownRenderer className={mdClass}>{parsed.summary}</MarkdownRenderer>
       {parsed.result && (
         <>
           <button
@@ -53,16 +45,12 @@ export function TaskNotificationContent({ text }: { text: string }) {
             {showResult ? 'Hide details' : 'Show details'}
           </button>
           {showResult && (
-            <div className={`${mdClass} mt-1 text-[var(--text-secondary)]`}>
-              <Markdown remarkPlugins={[remarkGfm, remarkBreaks]}>{parsed.result}</Markdown>
-            </div>
+            <MarkdownRenderer className={`${mdClass} mt-1 text-[var(--text-secondary)]`}>{parsed.result}</MarkdownRenderer>
           )}
         </>
       )}
       {parsed.after && !/Full transcript available at/i.test(parsed.after) && (
-        <div className={`${mdClass} mt-1`}>
-          <Markdown remarkPlugins={[remarkGfm, remarkBreaks]}>{parsed.after}</Markdown>
-        </div>
+        <MarkdownRenderer className={`${mdClass} mt-1`}>{parsed.after}</MarkdownRenderer>
       )}
     </div>
   )
