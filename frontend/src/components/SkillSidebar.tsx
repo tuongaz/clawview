@@ -1,13 +1,21 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Sparkles } from 'lucide-react'
+import { Sparkles, FolderOpen, User, Puzzle } from 'lucide-react'
 import { ErrorAlert, MarkdownRenderer } from './ui'
 import { Sidebar } from './Sidebar'
+
+const sourceLabels: Record<string, { label: string; icon: typeof FolderOpen }> = {
+  project: { label: 'Project', icon: FolderOpen },
+  user: { label: 'User', icon: User },
+  plugin: { label: 'Plugin', icon: Puzzle },
+}
 
 export function SkillPanel() {
   const { sessionId, skillName } = useParams<{ sessionId: string; skillName: string }>()
   const navigate = useNavigate()
   const [content, setContent] = useState<string | null>(null)
+  const [source, setSource] = useState<string | null>(null)
+  const [sourcePath, setSourcePath] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -30,6 +38,8 @@ export function SkillPanel() {
       })
       .then((data) => {
         setContent(data.content)
+        setSource(data.source ?? null)
+        setSourcePath(data.path ?? null)
         setLoading(false)
       })
       .catch((err) => {
@@ -38,11 +48,23 @@ export function SkillPanel() {
       })
   }, [sessionId, decodedName])
 
+  const sourceInfo = source ? sourceLabels[source] : null
+  const SourceIcon = sourceInfo?.icon
+
   return (
     <Sidebar
       onClose={onClose}
       icon={<Sparkles size={18} className="text-[var(--accent-yellow)]" />}
       title={<span className="font-mono">{decodedName}</span>}
+      footer={sourceInfo && (
+        <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
+          {SourceIcon && <SourceIcon size={14} />}
+          <span>{sourceInfo.label}</span>
+          {sourcePath && (
+            <span className="font-mono text-xs opacity-60 truncate" title={sourcePath}>{sourcePath}</span>
+          )}
+        </div>
+      )}
     >
       {loading && (
         <div className="flex items-center justify-center py-12 text-[var(--text-secondary)] text-base">

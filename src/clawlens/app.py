@@ -101,13 +101,18 @@ async def get_session_memory(session_id: str) -> JSONResponse:
 @app.get("/api/sessions/{session_id}/skills/{skill_name:path}")
 async def get_skill_content(session_id: str, skill_name: str) -> JSONResponse:
     """Return the content of a skill file by name."""
-    content = await asyncio.to_thread(load_skill_content, session_id, skill_name)
-    if content is None:
+    result = await asyncio.to_thread(load_skill_content, session_id, skill_name)
+    if result is None:
         return JSONResponse(
             status_code=404,
             content={"error": f"Skill '{skill_name}' not found"},
         )
-    return JSONResponse(content={"name": skill_name, "content": content})
+    return JSONResponse(content={
+        "name": skill_name,
+        "content": result["content"],
+        "source": result["source"],
+        "path": result["path"],
+    })
 
 
 @app.get("/{full_path:path}")
