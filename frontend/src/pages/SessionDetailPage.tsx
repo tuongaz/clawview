@@ -49,7 +49,7 @@ export function SessionDetailPage() {
       <Outlet />
 
       {/* Session Header - full width */}
-      <div className="px-8 py-6 pb-0 max-sm:px-4 max-sm:py-4 max-sm:pb-0 max-w-[1400px] mx-auto">
+      <div className="px-8 py-6 pb-0 max-sm:px-4 max-sm:py-4 max-sm:pb-0 max-w-[1400px] 2xl:max-w-[1800px] mx-auto">
         <div className="flex items-center gap-3 flex-wrap">
           <StatusIndicator isActive={isActive} isWaiting={isWaiting} size={10} />
           {detail.projectName && (
@@ -80,7 +80,7 @@ export function SessionDetailPage() {
         </div>
       </div>
 
-      <div className="px-8 py-6 max-sm:px-4 max-sm:py-4 max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
+      <div className="px-8 py-6 max-sm:px-4 max-sm:py-4 max-w-[1400px] 2xl:max-w-[1800px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
         {/* Left: Conversation */}
         <div className="order-2 lg:order-1 min-w-0">
           {detail.turns.length > 0 ? (
