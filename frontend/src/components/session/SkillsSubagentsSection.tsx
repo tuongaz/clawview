@@ -8,6 +8,11 @@ interface SkillsSubagentsSectionProps {
   subagentsUsed: string[]
 }
 
+/** Strip leading "/" from a command name to get the skill lookup key. */
+function commandToSkillName(cmd: string): string {
+  return cmd.startsWith('/') ? cmd.slice(1) : cmd
+}
+
 export function SkillsSubagentsSection({ sessionId, commandsUsed, skillsUsed, subagentsUsed }: SkillsSubagentsSectionProps) {
   const hasCommands = commandsUsed && commandsUsed.length > 0
   const hasSkills = skillsUsed && skillsUsed.length > 0
@@ -18,10 +23,12 @@ export function SkillsSubagentsSection({ sessionId, commandsUsed, skillsUsed, su
     <SectionCard className="space-y-3">
       {hasCommands && (
         <div>
-          <SectionTitle className="mb-2">Commands <InfoTip text="Slash commands (e.g. /commit, /review) invoked during this session." /></SectionTitle>
+          <SectionTitle className="mb-2">Commands <InfoTip text="Slash commands (e.g. /commit, /review) invoked during this session. Click to view the skill definition." /></SectionTitle>
           <div className="flex flex-wrap gap-1.5">
             {commandsUsed.map((c) => (
-              <ThemedChip key={c} color="cyan">{c}</ThemedChip>
+              <Link key={c} to={`/session/${sessionId}/skills/${encodeURIComponent(commandToSkillName(c))}`}>
+                <ThemedChip color="cyan" interactive>{c}</ThemedChip>
+              </Link>
             ))}
           </div>
         </div>
@@ -32,7 +39,7 @@ export function SkillsSubagentsSection({ sessionId, commandsUsed, skillsUsed, su
           <div className="flex flex-wrap gap-1.5">
             {skillsUsed.map((s) => (
               <Link key={s} to={`/session/${sessionId}/skills/${encodeURIComponent(s)}`}>
-                <ThemedChip key={s} color="yellow" interactive>{s}</ThemedChip>
+                <ThemedChip color="yellow" interactive>{s}</ThemedChip>
               </Link>
             ))}
           </div>

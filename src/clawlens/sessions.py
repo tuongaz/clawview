@@ -157,11 +157,13 @@ def _find_skill_file(base_name: str, search_dirs: list[str]) -> str | None:
     return None
 
 
-def load_skill_content(session_id: str, skill_name: str) -> str | None:
+def load_skill_content(session_id: str, skill_name: str) -> dict[str, str] | None:
     """Load the content of a skill file by name for the given session.
 
     Searches project-level ``.claude/skills/``, global ``~/.claude/skills/``,
     and plugin skill directories.
+
+    Returns a dict with ``content`` and ``source`` keys, or ``None``.
     """
     fpath = find_session_file(session_id)
     if fpath is None:
@@ -192,9 +194,20 @@ def load_skill_content(session_id: str, skill_name: str) -> str | None:
         return None
 
     try:
-        return Path(match).read_text(encoding="utf-8")
+        content = Path(match).read_text(encoding="utf-8")
     except OSError:
         return None
+
+    # Determine source category
+    match_path = os.path.abspath(match)
+    if cwd and match_path.startswith(os.path.abspath(cwd)):
+        source = "project"
+    elif match_path.startswith(os.path.join(home, ".claude", "plugins")):
+        source = "plugin"
+    else:
+        source = "user"
+
+    return {"content": content, "source": source, "path": match_path}
 
 
 # ---------------------------------------------------------------------------
