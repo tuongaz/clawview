@@ -97,27 +97,36 @@ function FrontmatterBlock({ entries }: { entries: FrontmatterEntry[] }) {
 }
 
 /**
- * Detect raw digraph/diagraph blocks that aren't inside code fences and wrap
- * them so react-markdown can pick them up as ```digraph code blocks.
+ * Ensure any digraph block in the text ends up inside a properly tagged
+ * ```digraph code fence so react-markdown assigns the right language class.
  *
- * Matches patterns like:
- *   digraph name {
- *     ...
- *   }
+ * Handles:
+ *  - Raw digraph not in any fence
+ *  - digraph inside a plain ``` fence (no language)
+ *  - digraph inside ``` with another language tag (e.g. ```dot, ```graphviz, ```text)
+ *  - Already ```digraph / ```diagraph → left as-is
  */
-function wrapRawDigraphs(text: string): string {
-  // If the text already has the digraph inside a code fence, skip it.
-  if (/```\s*(?:digraph|diagraph)\b/i.test(text)) return text
+function ensureDigraphFenced(text: string): string {
+  // Case 1: already in a ```digraph or ```diagraph fence → do nothing
+  if (/```\s*(?:digraph|diagraph)\s*\n/i.test(text)) return text
 
-  // Try to find a raw digraph block and wrap it in a code fence.
-  // We need to match the opening "digraph name {" and find its closing "}".
-  const match = text.match(/(?:^|\n)([ \t]*)(di(?:a?graph)\s+\w+\s*\{)/i)
-  if (!match || match.index === undefined) return text
+  // Case 2: digraph inside a code fence with a different (or no) language tag.
+  // Match: ``` optionally followed by a language tag, then content starting with digraph
+  const fencedRe = /```\w*\s*\n(\s*di(?:a?graph)\s+\w[\s\S]*?\n)\s*```/i
+  const fencedMatch = text.match(fencedRe)
+  if (fencedMatch) {
+    const code = fencedMatch[1].trimEnd()
+    return text.slice(0, fencedMatch.index!) + '\n```digraph\n' + code + '\n```\n' + text.slice(fencedMatch.index! + fencedMatch[0].length)
+  }
 
-  const startIdx = match.index + (text[match.index] === '\n' ? 1 : 0)
-  const indent = match[1]
+  // Case 3: raw digraph (not inside any fence). Find "digraph name {" and match braces.
+  const rawMatch = text.match(/(?:^|\n)([ \t]*)(di(?:a?graph)\s+\w+\s*\{)/i)
+  if (!rawMatch || rawMatch.index === undefined) return text
 
-  // Find the matching closing brace by counting braces
+  const startIdx = rawMatch.index + (text[rawMatch.index] === '\n' ? 1 : 0)
+  const indent = rawMatch[1]
+
+  // Find the matching closing brace
   let depth = 0
   let endIdx = startIdx
   for (let i = startIdx; i < text.length; i++) {
@@ -130,14 +139,13 @@ function wrapRawDigraphs(text: string): string {
       }
     }
   }
-
-  if (depth !== 0) return text // unbalanced braces, skip
+  if (depth !== 0) return text
 
   const before = text.slice(0, startIdx)
   const digraphBlock = text.slice(startIdx, endIdx)
   const after = text.slice(endIdx)
 
-  // Remove common leading indent from the block
+  // Remove common leading indent
   const stripped = indent
     ? digraphBlock.split('\n').map(l => l.startsWith(indent) ? l.slice(indent.length) : l).join('\n')
     : digraphBlock
@@ -152,7 +160,7 @@ interface MarkdownRendererProps {
 
 export function MarkdownRenderer({ children, className }: MarkdownRendererProps) {
   const { frontmatter, body } = useMemo(() => parseFrontmatter(children), [children])
-  const processed = wrapRawDigraphs(body)
+  const processed = ensureDigraphFenced(body)
 
   return (
     <div className={className}>
