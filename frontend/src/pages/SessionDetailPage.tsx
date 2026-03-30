@@ -52,7 +52,7 @@ export function SessionDetailPage() {
       <Outlet />
 
       {/* Session Header - full width */}
-      <div className="px-8 py-6 pb-0 max-sm:px-4 max-sm:py-4 max-sm:pb-0">
+      <div className="pl-8 pr-4 py-6 pb-0 max-sm:px-4 max-sm:py-4 max-sm:pb-0">
         <div className="flex items-center gap-3 flex-wrap">
           <StatusIndicator isActive={isActive} isWaiting={isWaiting} size={10} />
           {detail.projectName && (
@@ -71,7 +71,7 @@ export function SessionDetailPage() {
           ) : (
             <span className="text-3xl font-mono font-semibold text-[var(--text-bright)]">{slug}</span>
           )}
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="flex items-center gap-2 ml-auto text-right">
             {detail.model && <ThemedChip color="cyan">{detail.model}</ThemedChip>}
             {detail.version && (
               <Chip size="sm" variant="secondary" className="font-mono text-sm text-[var(--text-secondary)]">
@@ -86,7 +86,7 @@ export function SessionDetailPage() {
         </div>
       </div>
 
-<div className="px-8 py-6 max-sm:px-4 max-sm:py-4 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-10">
+<div className="pl-8 pr-4 py-6 max-sm:px-4 max-sm:py-4 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-10">
         {/* Left: Conversation */}
         <div className="order-2 lg:order-1 min-w-0">
           {detail.turns.length > 0 ? (
@@ -97,7 +97,7 @@ export function SessionDetailPage() {
         </div>
 
         {/* Right: Session Details */}
-        <div className="order-1 lg:order-2 lg:sticky lg:top-[60px] lg:self-start lg:max-h-[calc(100vh-80px)] lg:overflow-y-auto space-y-4">
+        <div className="order-1 lg:order-2 lg:sticky lg:top-[60px] lg:self-start space-y-4">
           <SectionCard className="space-y-3">
             {detail.cwd && (
               <MetadataField label="Working Directory" info="The filesystem path where this Claude Code session is running.">

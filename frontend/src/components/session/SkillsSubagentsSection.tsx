@@ -8,13 +8,39 @@ interface SkillsSubagentsSectionProps {
   subagentsUsed: string[]
 }
 
+/** Built-in CLI commands that are not skills — hide from the UI. */
+const BUILTIN_COMMANDS = new Set([
+  '/clear',
+  '/help',
+  '/exit',
+  '/quit',
+  '/compact',
+  '/config',
+  '/cost',
+  '/doctor',
+  '/init',
+  '/login',
+  '/logout',
+  '/fast',
+  '/memory',
+  '/model',
+  '/permissions',
+  '/status',
+  '/terminal-setup',
+  '/vim',
+  '/review',
+  '/bug',
+  '/pr-comments',
+])
+
 /** Strip leading "/" from a command name to get the skill lookup key. */
 function commandToSkillName(cmd: string): string {
   return cmd.startsWith('/') ? cmd.slice(1) : cmd
 }
 
 export function SkillsSubagentsSection({ sessionId, commandsUsed, skillsUsed, subagentsUsed }: SkillsSubagentsSectionProps) {
-  const hasCommands = commandsUsed && commandsUsed.length > 0
+  const filteredCommands = commandsUsed?.filter((c) => !BUILTIN_COMMANDS.has(c)) ?? []
+  const hasCommands = filteredCommands.length > 0
   const hasSkills = skillsUsed && skillsUsed.length > 0
   const hasSubagents = subagentsUsed && subagentsUsed.length > 0
   if (!hasCommands && !hasSkills && !hasSubagents) return null
@@ -25,7 +51,7 @@ export function SkillsSubagentsSection({ sessionId, commandsUsed, skillsUsed, su
         <div>
           <SectionTitle className="mb-2">Commands <InfoTip text="Slash commands (e.g. /commit, /review) invoked during this session. Click to view the skill definition." /></SectionTitle>
           <div className="flex flex-wrap gap-1.5">
-            {commandsUsed.map((c) => (
+            {filteredCommands.map((c) => (
               <Link key={c} to={`/session/${sessionId}/skills/${encodeURIComponent(commandToSkillName(c))}`}>
                 <ThemedChip color="cyan" interactive>{c}</ThemedChip>
               </Link>
