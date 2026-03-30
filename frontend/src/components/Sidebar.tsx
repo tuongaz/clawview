@@ -27,7 +27,7 @@ export function Sidebar({ onClose, icon, title, footer, children }: SidebarProps
       />
 
       {/* Sidebar */}
-      <div className="fixed top-0 right-0 h-full w-[480px] max-w-[90vw] bg-[var(--bg-primary)] border-l border-[var(--border)] z-50 flex flex-col shadow-2xl shadow-black/40 animate-slide-in">
+      <div className="fixed top-0 right-0 h-full w-[640px] max-w-[90vw] bg-[var(--bg-primary)] border-l border-[var(--border)] z-50 flex flex-col shadow-2xl shadow-black/40 animate-slide-in">
         {/* Header */}
         <div className="flex items-center gap-2 px-5 py-4 border-b border-[var(--border)] shrink-0">
           {icon}
