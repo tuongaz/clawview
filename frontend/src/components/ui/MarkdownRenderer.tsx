@@ -5,7 +5,7 @@ import remarkBreaks from 'remark-breaks'
 import { MermaidDiagram } from './MermaidDiagram'
 import { DiagraphDiagram } from './DiagraphDiagram'
 
-const DIAGRAM_LANGUAGES = new Set(['mermaid', 'diagraph'])
+const DIAGRAM_LANGUAGES = new Set(['mermaid', 'diagraph', 'digraph'])
 
 const components: Components = {
   pre({ children, ...props }) {
@@ -29,7 +29,7 @@ const components: Components = {
         if (lang === 'mermaid') {
           return <MermaidDiagram code={code} />
         }
-        if (lang === 'diagraph') {
+        if (lang === 'diagraph' || lang === 'digraph') {
           return <DiagraphDiagram code={code} />
         }
       }
