@@ -458,6 +458,7 @@ def parse_session(fpath: str) -> Session | None:
     Returns None if the file cannot be parsed or contains no valid session data.
     """
     first_prompt = ""
+    first_real_prompt = ""  # first non-command user text
     last_user_prompt = ""
     last_action = ""
     first_ts = ""
@@ -465,6 +466,7 @@ def parse_session(fpath: str) -> Session | None:
     waiting_for_input = False
     last_model = ""
     last_context_tokens = 0
+    started_from_clear = False
 
     session_id = ""
     session_name = ""
@@ -478,6 +480,18 @@ def parse_session(fpath: str) -> Session | None:
                 line = line.strip()
                 if not line:
                     continue
+
+                # Detect SessionStart:clear from progress entries.
+                if not started_from_clear:
+                    try:
+                        raw = json.loads(line)
+                        data = raw.get("data")
+                        if isinstance(data, dict):
+                            hook_name = data.get("hookName", "")
+                            if isinstance(hook_name, str) and ":clear" in hook_name:
+                                started_from_clear = True
+                    except (json.JSONDecodeError, AttributeError):
+                        pass
 
                 try:
                     msg = Message.model_validate_json(line)
@@ -516,6 +530,9 @@ def parse_session(fpath: str) -> Session | None:
                     if text:
                         if not first_prompt:
                             first_prompt = truncate(text, 120)
+                        # Track first non-command prompt for /clear sessions.
+                        if not first_real_prompt and not text.strip().startswith("/"):
+                            first_real_prompt = truncate(text, 120)
                         last_user_prompt = _truncate_keep_newlines(text, 200)
 
                 # Extract last action from assistant messages.
@@ -543,6 +560,11 @@ def parse_session(fpath: str) -> Session | None:
     if not session_id:
         return None
 
+    # For sessions started from /clear, prefer the first real prompt.
+    display_prompt = first_prompt
+    if started_from_clear and first_real_prompt:
+        display_prompt = first_real_prompt
+
     return Session(
         session_id=session_id,
         name=session_name,
@@ -550,7 +572,7 @@ def parse_session(fpath: str) -> Session | None:
         git_branch=git_branch,
         timestamp=last_ts,
         start_timestamp=first_ts,
-        first_prompt=first_prompt,
+        first_prompt=display_prompt,
         last_user_prompt=last_user_prompt,
         last_action=truncate(last_action, 160),
         waiting_for_input=waiting_for_input,
@@ -575,11 +597,13 @@ def parse_session_detail(fpath: str) -> SessionDetail | None:
     last_ts = ""
     version = ""
     first_prompt = ""
+    first_real_prompt = ""
     last_user_prompt = ""
     last_action = ""
     waiting_for_input = False
     last_model = ""
     last_context_tokens = 0
+    started_from_clear = False
 
     # Turns
     turns: list[Turn] = []
@@ -611,6 +635,14 @@ def parse_session_detail(fpath: str) -> SessionDetail | None:
                     raw = json.loads(line)
                 except json.JSONDecodeError:
                     continue
+
+                # Detect SessionStart:clear from progress entries.
+                if not started_from_clear:
+                    data = raw.get("data")
+                    if isinstance(data, dict):
+                        hook_name = data.get("hookName", "")
+                        if isinstance(hook_name, str) and ":clear" in hook_name:
+                            started_from_clear = True
 
                 # Check for duration events (durationMs at top level).
                 duration_ms = raw.get("durationMs")
@@ -656,6 +688,8 @@ def parse_session_detail(fpath: str) -> SessionDetail | None:
                     if text:
                         if not first_prompt:
                             first_prompt = truncate(text, 120)
+                        if not first_real_prompt and not text.strip().startswith("/"):
+                            first_real_prompt = truncate(text, 120)
                         last_user_prompt = _truncate_keep_newlines(text, 200)
                         # Detect /command usage
                         stripped = text.strip()
@@ -828,6 +862,10 @@ def parse_session_detail(fpath: str) -> SessionDetail | None:
     if not session_id:
         return None
 
+    display_prompt = first_prompt
+    if started_from_clear and first_real_prompt:
+        display_prompt = first_real_prompt
+
     return SessionDetail(
         session_id=session_id,
         name=session_name,
@@ -835,7 +873,7 @@ def parse_session_detail(fpath: str) -> SessionDetail | None:
         git_branch=git_branch,
         timestamp=last_ts,
         start_timestamp=first_ts,
-        first_prompt=first_prompt,
+        first_prompt=display_prompt,
         last_user_prompt=last_user_prompt,
         last_action=truncate(last_action, 160),
         waiting_for_input=waiting_for_input,
@@ -897,6 +935,164 @@ def enrich_session_detail(detail: SessionDetail, fpath: str) -> None:
                 break
     except OSError:
         pass
+
+    # Find continuation links for this session.
+    _enrich_continuation_links(detail, fpath, home)
+
+
+def _enrich_continuation_links(
+    detail: SessionDetail, fpath: str, home: str
+) -> None:
+    """Find continuation links for a session detail.
+
+    Uses the session cache (populated by load_grouped_sessions) or falls back
+    to scanning sibling files.  Only checks files whose modification time is
+    within the gap threshold of this session's timestamps for efficiency.
+    """
+    project_dir = os.path.dirname(fpath)
+    dir_name = os.path.basename(project_dir)
+
+    # Try the cache first — load_grouped_sessions populates it.
+    cached_sessions: list[Session] = []
+    for cached_path, cached_entry in _cache.items():
+        if os.path.dirname(cached_path) == project_dir:
+            cached_sessions.append(cached_entry.session)
+
+    if cached_sessions:
+        # Use cached sessions for fast linking.
+        _link_continuation_from_list(detail, cached_sessions)
+        return
+
+    # Fallback: scan siblings, but only those with recent mod times.
+    if not detail.start_timestamp and not detail.timestamp:
+        return
+
+    try:
+        detail_start = datetime.fromisoformat(detail.start_timestamp) if detail.start_timestamp else None
+        detail_end = datetime.fromisoformat(detail.timestamp) if detail.timestamp else None
+    except (ValueError, TypeError):
+        return
+
+    # Convert to epoch for file mtime comparison.
+    window = _CLEAR_GAP_THRESHOLD + 60  # extra buffer for mtime precision
+    detail_start_epoch = detail_start.timestamp() if detail_start else 0
+    detail_end_epoch = detail_end.timestamp() if detail_end else 0
+
+    try:
+        siblings = [
+            f
+            for f in os.listdir(project_dir)
+            if f.endswith(".jsonl") and f != os.path.basename(fpath)
+        ]
+    except OSError:
+        return
+
+    best_from: tuple[float, str] | None = None
+    best_as: tuple[float, str] | None = None
+
+    for sib in siblings:
+        sib_path = os.path.join(project_dir, sib)
+        sib_id = sib.removesuffix(".jsonl")
+
+        # Skip files whose mtime is far from our timestamps.
+        try:
+            mtime = os.stat(sib_path).st_mtime
+        except OSError:
+            continue
+        if detail_end_epoch and abs(mtime - detail_end_epoch) > window:
+            if detail_start_epoch and abs(mtime - detail_start_epoch) > window:
+                continue
+
+        # Quick parse: read first timestamp from first few lines.
+        sib_first_ts = ""
+        sib_last_ts = ""
+        try:
+            with open(sib_path, encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        raw = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    ts = raw.get("timestamp", "")
+                    if isinstance(ts, str) and ts:
+                        if not sib_first_ts:
+                            sib_first_ts = ts
+                        sib_last_ts = ts
+        except OSError:
+            continue
+
+        if not sib_first_ts or not sib_last_ts:
+            continue
+
+        try:
+            sib_start = datetime.fromisoformat(sib_first_ts)
+            sib_end = datetime.fromisoformat(sib_last_ts)
+        except (ValueError, TypeError):
+            continue
+
+        if detail_end:
+            gap = (sib_start - detail_end).total_seconds()
+            if 0 <= gap <= _CLEAR_GAP_THRESHOLD:
+                if best_as is None or gap < best_as[0]:
+                    best_as = (gap, sib_id)
+
+        if detail_start:
+            gap = (detail_start - sib_end).total_seconds()
+            if 0 <= gap <= _CLEAR_GAP_THRESHOLD:
+                if best_from is None or gap < best_from[0]:
+                    best_from = (gap, sib_id)
+
+    if best_from:
+        detail.continued_from = best_from[1]
+    if best_as:
+        detail.continued_as = best_as[1]
+
+
+def _link_continuation_from_list(
+    detail: SessionDetail, sessions: list[Session]
+) -> None:
+    """Link a SessionDetail to its continuation using a list of parsed sessions."""
+    if not detail.start_timestamp and not detail.timestamp:
+        return
+
+    try:
+        detail_start = datetime.fromisoformat(detail.start_timestamp) if detail.start_timestamp else None
+        detail_end = datetime.fromisoformat(detail.timestamp) if detail.timestamp else None
+    except (ValueError, TypeError):
+        return
+
+    best_from: tuple[float, str] | None = None
+    best_as: tuple[float, str] | None = None
+
+    for sess in sessions:
+        if sess.session_id == detail.session_id:
+            continue
+
+        try:
+            sib_start = datetime.fromisoformat(sess.start_timestamp) if sess.start_timestamp else None
+            sib_end = datetime.fromisoformat(sess.timestamp) if sess.timestamp else None
+        except (ValueError, TypeError):
+            continue
+
+        if detail_end and sib_start:
+            gap = (sib_start - detail_end).total_seconds()
+            if 0 <= gap <= _CLEAR_GAP_THRESHOLD:
+                if best_as is None or gap < best_as[0]:
+                    best_as = (gap, sess.session_id)
+
+        if detail_start and sib_end:
+            gap = (detail_start - sib_end).total_seconds()
+            if 0 <= gap <= _CLEAR_GAP_THRESHOLD:
+                if best_from is None or gap < best_from[0]:
+                    best_from = (gap, sess.session_id)
+
+    if best_from:
+        detail.continued_from = best_from[1]
+    if best_as:
+        detail.continued_as = best_as[1]
 
 
 # ---------------------------------------------------------------------------
@@ -1030,6 +1226,89 @@ def _load_active_info(home: str) -> ActiveInfo:
 
 
 # ---------------------------------------------------------------------------
+# Session continuation linking
+# ---------------------------------------------------------------------------
+
+# Maximum gap (in seconds) between the end of one session and the start of
+# the next for them to be considered a continuation chain (via /clear).
+_CLEAR_GAP_THRESHOLD = 300  # 5 minutes
+
+
+def _detect_clear_start(fpath: str) -> bool:
+    """Check if a session JSONL file was started via /clear.
+
+    Reads only the first few lines for efficiency.
+    """
+    try:
+        with open(fpath, encoding="utf-8", errors="replace") as f:
+            for i, line in enumerate(f):
+                if i > 10:
+                    break
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    raw = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                data = raw.get("data")
+                if isinstance(data, dict):
+                    hook_name = data.get("hookName", "")
+                    if isinstance(hook_name, str) and ":clear" in hook_name:
+                        return True
+    except OSError:
+        pass
+    return False
+
+
+def _link_continuation_sessions(
+    project_map: dict[str, list[Session]],
+) -> None:
+    """Link sessions that are continuations of each other via /clear.
+
+    For each project, sorts sessions by start_timestamp and links each
+    session that started from /clear to its predecessor if the gap between
+    the predecessor's last timestamp and this session's start is small.
+    """
+    for sessions in project_map.values():
+        if len(sessions) < 2:
+            continue
+
+        # Sort by start_timestamp ascending.
+        by_start = sorted(sessions, key=lambda s: s.start_timestamp or "")
+
+        # Build a lookup for fast access.
+        by_id: dict[str, Session] = {s.session_id: s for s in sessions}
+
+        for i, sess in enumerate(by_start):
+            # Only look at sessions whose first_prompt was originally a command
+            # or that we detected started from /clear.  We check if the session
+            # file has SessionStart:clear – but since we already detected it
+            # during parse_session, we can approximate: if the start_timestamp
+            # is close to the predecessor's end timestamp.
+            if i == 0:
+                continue
+
+            # Quick check: is this session's start very close to the
+            # predecessor's end?
+            prev = by_start[i - 1]
+            if not sess.start_timestamp or not prev.timestamp:
+                continue
+
+            try:
+                start_dt = datetime.fromisoformat(sess.start_timestamp)
+                prev_end_dt = datetime.fromisoformat(prev.timestamp)
+            except (ValueError, TypeError):
+                continue
+
+            gap = (start_dt - prev_end_dt).total_seconds()
+            if 0 <= gap <= _CLEAR_GAP_THRESHOLD:
+                # Link them.
+                prev.continued_as = sess.session_id
+                sess.continued_from = prev.session_id
+
+
+# ---------------------------------------------------------------------------
 # Grouped session loading
 # ---------------------------------------------------------------------------
 
@@ -1091,6 +1370,9 @@ def load_grouped_sessions(limit: int = 0) -> list[ProjectGroup]:
             sess.client = resolve_client_for_pid(session_pid, ide_pid_map)
 
         project_map.setdefault(dir_name, []).append(sess)
+
+    # Link continuation sessions within each project.
+    _link_continuation_sessions(project_map)
 
     # Build project groups.
     groups: list[ProjectGroup] = []

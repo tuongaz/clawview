@@ -34,6 +34,8 @@ class Session(BaseModel):
     max_context_tokens: int = 0
     model: str = ""
     client: str = ""
+    continued_from: str = ""  # session_id this continues from (after /clear)
+    continued_as: str = ""  # session_id of continuation (after /clear)
 
 
 class TurnEvent(BaseModel):
@@ -114,6 +116,8 @@ class SessionDetail(BaseModel):
     max_context_tokens: int = 0
     model: str = ""
     client: str = ""
+    continued_from: str = ""
+    continued_as: str = ""
 
     # Detail-specific fields
     tool_usage: dict[str, int] = {}

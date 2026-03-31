@@ -17,6 +17,8 @@ export interface Session {
   maxContextTokens: number
   model: string
   client: string
+  continuedFrom: string  // session_id this continues from (after /clear)
+  continuedAs: string    // session_id of continuation (after /clear)
 }
 
 export interface TurnEvent {
