@@ -39,11 +39,19 @@ export const SessionCard = memo(function SessionCard({ session, projectPath }: S
             <span className="text-[var(--text-secondary)] font-mono text-sm">
               {slug}
             </span>
+            {isWaiting && (
+              <span className="text-warning/70 text-xs font-mono">Waiting for input</span>
+            )}
           </>
         ) : (
-          <span className={`font-mono font-semibold text-base tracking-wider ${isActive ? 'text-[var(--text-bright)]' : 'text-[var(--text-secondary)]'}`}>
-            {slug}
-          </span>
+          <>
+            <span className={`font-mono font-semibold text-base tracking-wider ${isActive ? 'text-[var(--text-bright)]' : 'text-[var(--text-secondary)]'}`}>
+              {slug}
+            </span>
+            {isWaiting && (
+              <span className="text-warning/70 text-xs font-mono">Waiting for input</span>
+            )}
+          </>
         )}
         <span className="ml-auto text-[var(--text-secondary)] text-sm font-mono">
           {session.startTimestamp && formatElapsed(session.startTimestamp, session.timestamp)}{' '}

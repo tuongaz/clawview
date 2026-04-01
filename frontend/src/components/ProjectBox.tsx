@@ -52,7 +52,7 @@ export function ProjectBox({ group, displayName }: ProjectBoxProps) {
                 className="font-mono text-base text-[var(--text-secondary)] border-[var(--border)] hover:text-[var(--text-primary)] hover:border-[var(--accent-cyan)]"
                 onPress={() => setExpanded(true)}
               >
-                Show {hiddenCount} more
+                Show All
               </Button>
             )}
             {expanded && hasIdle && hasActive && (
@@ -62,7 +62,7 @@ export function ProjectBox({ group, displayName }: ProjectBoxProps) {
                 className="font-mono text-base text-[var(--text-secondary)] border-[var(--border)] hover:text-[var(--text-primary)] hover:border-[var(--accent-cyan)]"
                 onPress={() => setExpanded(false)}
               >
-                Show less
+                Show Active
               </Button>
             )}
             <Button

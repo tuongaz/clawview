@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react'
-import { Switch, Skeleton } from '@heroui/react'
+import { useMemo } from 'react'
+import { Skeleton } from '@heroui/react'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { Header } from '../components/Header'
 import { ProjectBox } from '../components/ProjectBox'
@@ -57,8 +57,6 @@ function DashboardSkeleton() {
 
 export function Dashboard() {
   const { groups, stats, loading } = useWebSocket()
-  const [activeOnly, setActiveOnly] = useState(false)
-
   // Build display labels, disambiguating duplicate folder names with parent
   const projectLabels = useMemo(() => {
     const shortNames = groups.map(g => g.projectName.split('/').pop() || g.projectName)
@@ -74,12 +72,7 @@ export function Dashboard() {
     }))
   }, [groups])
 
-  const filteredGroups = useMemo(() => {
-    if (!activeOnly) return groups
-    return groups
-      .map((g) => ({ ...g, sessions: g.sessions.filter((s) => s.isActive) }))
-      .filter((g) => g.sessions.length > 0)
-  }, [groups, activeOnly])
+  const filteredGroups = groups
 
   const totalSessions = groups.reduce((sum, g) => sum + g.sessions.length, 0)
   const activeSessions = groups.reduce(
@@ -114,17 +107,6 @@ export function Dashboard() {
           </div>
         )}
 
-        <div className="flex items-center gap-3 text-base">
-          <Switch
-            size="lg"
-            isSelected={activeOnly}
-            onChange={setActiveOnly}
-          >
-            <Switch.Control className={activeOnly ? 'bg-[var(--accent-green)]' : undefined}>
-              <Switch.Thumb />
-            </Switch.Control>
-          </Switch>
-        </div>
       </Header>
 
       <div className="w-full px-8 py-6 max-sm:px-4 max-sm:py-4">
@@ -141,7 +123,7 @@ export function Dashboard() {
                 />
               ))}
               {filteredGroups.length === 0 && (
-                <EmptyState message={activeOnly ? 'No running sessions.' : 'No sessions found.'} className="py-20" />
+                <EmptyState message="No sessions found." className="py-20" />
               )}
             </>
           )}

@@ -67,9 +67,17 @@ export function SessionDetailPage() {
             <>
               <span className="text-3xl font-semibold text-[var(--text-bright)]">{detail.name}</span>
               <span className="text-[var(--text-secondary)] opacity-50 font-mono text-base">{slug}</span>
+              {isWaiting && (
+                <span className="text-warning/70 text-sm font-mono">Waiting for input</span>
+              )}
             </>
           ) : (
-            <span className="text-3xl font-mono font-semibold text-[var(--text-bright)]">{slug}</span>
+            <>
+              <span className="text-3xl font-mono font-semibold text-[var(--text-bright)]">{slug}</span>
+              {isWaiting && (
+                <span className="text-warning/70 text-sm font-mono">Waiting for input</span>
+              )}
+            </>
           )}
           <div className="flex items-center gap-2 ml-auto text-right">
             {detail.model && <ThemedChip color="cyan">{detail.model}</ThemedChip>}
