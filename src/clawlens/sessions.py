@@ -950,38 +950,22 @@ def parse_session_detail(fpath: str) -> SessionDetail | None:
     )
 
 
-def _is_session_active(
-    session_id: str, cwd: str, fpath: str, active_info: ActiveInfo
-) -> bool:
-    """Determine if a session is active based on the session registry.
-
-    A session is active only if it is registered in the session registry
-    (i.e. its process is still running).
-    """
-    return session_id in active_info.session_ids
+def _apply_active_status(
+    sess: Session | SessionDetail, active_info: ActiveInfo
+) -> None:
+    """Set is_active and waiting_for_input on a session from the process registry."""
+    sess.is_active = sess.session_id in active_info.session_ids
+    if sess.is_active:
+        status = active_info.session_statuses.get(sess.session_id, "")
+        if status:
+            sess.waiting_for_input = status == "waiting" or status == "idle"
 
 
 def enrich_session_detail(detail: SessionDetail, fpath: str) -> None:
     """Enrich a parsed SessionDetail with active status, IDE client, memory flag, and project name."""
     home = os.path.expanduser("~")
     active_info = _load_active_info(home)
-    detail.is_active = _is_session_active(
-        detail.session_id, detail.cwd, fpath, active_info
-    )
-    # Use PID file status for active sessions (more accurate than JSONL inference).
-    # Fall back to file staleness: if the JSONL hasn't been written to in 30s,
-    # the session is likely idle/waiting even without a PID status field.
-    if detail.is_active:
-        status = active_info.session_statuses.get(detail.session_id, "")
-        if status:
-            detail.waiting_for_input = status == "waiting" or status == "idle"
-        else:
-            try:
-                mtime = os.stat(fpath).st_mtime
-                if time.time() - mtime > 30:
-                    detail.waiting_for_input = True
-            except OSError:
-                pass
+    _apply_active_status(detail, active_info)
 
     ide_dir = os.path.join(home, ".claude", "ide")
     ide_pid_map = load_ide_pid_map(ide_dir)
@@ -1464,7 +1448,6 @@ def load_grouped_sessions(limit: int = 0) -> list[ProjectGroup]:
     ide_dir = os.path.join(home, ".claude", "ide")
     ide_pid_map = load_ide_pid_map(ide_dir)
     active_info = _load_active_info(home)
-    now = time.time()
 
     pattern = os.path.join(home, ".claude", "projects", "*", "*.jsonl")
     files = glob.glob(pattern)
@@ -1499,20 +1482,7 @@ def load_grouped_sessions(limit: int = 0) -> list[ProjectGroup]:
 
     # Assign active status, project name, IDE client.
     for fpath, sess in parsed:
-        sess.is_active = sess.session_id in active_info.session_ids
-        # Use PID file status for active sessions (more accurate than JSONL inference).
-        # Fall back to file staleness when no PID status field is available.
-        if sess.is_active:
-            status = active_info.session_statuses.get(sess.session_id, "")
-            if status:
-                sess.waiting_for_input = status == "waiting" or status == "idle"
-            else:
-                try:
-                    mtime = os.stat(fpath).st_mtime
-                    if now - mtime > 30:
-                        sess.waiting_for_input = True
-                except OSError:
-                    pass
+        _apply_active_status(sess, active_info)
 
         dir_name = os.path.basename(os.path.dirname(fpath))
         sess.project_name = decode_project_path(dir_name)
@@ -1530,13 +1500,15 @@ def load_grouped_sessions(limit: int = 0) -> list[ProjectGroup]:
     groups: list[ProjectGroup] = []
 
     for dir_name, sessions in project_map.items():
-        # Sort: active sessions first (stable order by session_id), then
-        # inactive sessions by timestamp descending.  Using a stable key for
-        # active sessions prevents them from shifting position on every update.
-        sessions.sort(
-            key=lambda s: (not s.is_active, "" if s.is_active else s.timestamp),
+        # Sort: active sessions first (stable order), then inactive sessions
+        # by timestamp descending.
+        active = [s for s in sessions if s.is_active]
+        inactive = sorted(
+            (s for s in sessions if not s.is_active),
+            key=lambda s: s.timestamp,
             reverse=True,
         )
+        sessions[:] = active + inactive
 
         if limit > 0 and len(sessions) > limit:
             sessions = sessions[:limit]
