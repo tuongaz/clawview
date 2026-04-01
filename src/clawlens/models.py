@@ -36,6 +36,7 @@ class Session(BaseModel):
     client: str = ""
     continued_from: str = ""  # session_id this continues from (after /clear)
     continued_as: str = ""  # session_id of continuation (after /clear)
+    is_clear_start: bool = False  # True if session was started via /clear
 
 
 class TurnEvent(BaseModel):
@@ -118,6 +119,7 @@ class SessionDetail(BaseModel):
     client: str = ""
     continued_from: str = ""
     continued_as: str = ""
+    is_clear_start: bool = False
 
     # Detail-specific fields
     tool_usage: dict[str, int] = {}

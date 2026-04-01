@@ -624,6 +624,7 @@ def parse_session(fpath: str) -> Session | None:
         context_tokens=last_context_tokens,
         max_context_tokens=get_model_context_limit(last_model),
         version=version,
+        is_clear_start=started_from_clear,
     )
 
 
@@ -932,6 +933,7 @@ def parse_session_detail(fpath: str) -> SessionDetail | None:
         context_tokens=last_context_tokens,
         max_context_tokens=get_model_context_limit(last_model),
         version=version,
+        is_clear_start=started_from_clear,
         tool_usage=tool_usage,
         mcp_tool_usage=mcp_tool_usage,
         skills_used=sorted(skills_used),
@@ -1052,8 +1054,8 @@ def _enrich_continuation_links(
     except OSError:
         return
 
-    best_from: tuple[float, str] | None = None
-    best_as: tuple[float, str] | None = None
+    # Collect sibling session info for positional lookup.
+    sib_entries: list[tuple[str, str, str, bool]] = []  # (start_ts, end_ts, id, is_clear)
 
     for sib in siblings:
         sib_path = os.path.join(project_dir, sib)
@@ -1068,9 +1070,10 @@ def _enrich_continuation_links(
             if detail_start_epoch and abs(mtime - detail_start_epoch) > window:
                 continue
 
-        # Quick parse: read first timestamp from first few lines.
+        # Quick parse: read timestamps and detect /clear start.
         sib_first_ts = ""
         sib_last_ts = ""
+        sib_is_clear = False
         try:
             with open(sib_path, encoding="utf-8", errors="replace") as f:
                 for line in f:
@@ -1086,78 +1089,135 @@ def _enrich_continuation_links(
                         if not sib_first_ts:
                             sib_first_ts = ts
                         sib_last_ts = ts
+                    if not sib_is_clear:
+                        data = raw.get("data")
+                        if isinstance(data, dict):
+                            hook_name = data.get("hookName", "")
+                            if isinstance(hook_name, str) and ":clear" in hook_name:
+                                sib_is_clear = True
         except OSError:
             continue
 
-        if not sib_first_ts or not sib_last_ts:
-            continue
+        if sib_first_ts and sib_last_ts:
+            sib_entries.append((sib_first_ts, sib_last_ts, sib_id, sib_is_clear))
 
-        try:
-            sib_start = datetime.fromisoformat(sib_first_ts)
-            sib_end = datetime.fromisoformat(sib_last_ts)
-        except (ValueError, TypeError):
-            continue
+    if not sib_entries:
+        return
 
-        if detail_end:
-            gap = (sib_start - detail_end).total_seconds()
-            if 0 <= gap <= _CLEAR_GAP_THRESHOLD:
-                if best_as is None or gap < best_as[0]:
-                    best_as = (gap, sib_id)
+    # Sort all sessions (siblings + detail) by start_timestamp for positional lookup.
+    detail_first_ts = detail_start.isoformat() if detail_start else ""
+    detail_last_ts = detail_end.isoformat() if detail_end else ""
+    all_entries = sib_entries + [(detail_first_ts, detail_last_ts, detail.session_id, detail.is_clear_start)]
+    all_entries.sort(key=lambda x: x[0])
 
-        if detail_start:
-            gap = (detail_start - sib_end).total_seconds()
-            if 0 <= gap <= _CLEAR_GAP_THRESHOLD:
-                if best_from is None or gap < best_from[0]:
-                    best_from = (gap, sib_id)
+    detail_idx = -1
+    for i, (_, _, sid, _) in enumerate(all_entries):
+        if sid == detail.session_id:
+            detail_idx = i
+            break
+    if detail_idx < 0:
+        return
 
-    if best_from:
-        detail.continued_from = best_from[1]
-    if best_as:
-        detail.continued_as = best_as[1]
+    # Check predecessor: if this detail is a /clear start, look at the
+    # immediately preceding session.
+    if detail.is_clear_start and detail_idx > 0:
+        prev_start, prev_end, prev_id, _ = all_entries[detail_idx - 1]
+        if prev_end and detail_first_ts:
+            try:
+                gap = (
+                    datetime.fromisoformat(detail_first_ts)
+                    - datetime.fromisoformat(prev_end)
+                ).total_seconds()
+                if 0 <= gap <= _CLEAR_GAP_THRESHOLD:
+                    detail.continued_from = prev_id
+            except (ValueError, TypeError):
+                pass
+
+    # Check successor: link only if the next session is a /clear start.
+    if detail_idx < len(all_entries) - 1:
+        next_start, next_end, next_id, next_clear = all_entries[detail_idx + 1]
+        if next_clear and next_start and detail_last_ts:
+            try:
+                gap = (
+                    datetime.fromisoformat(next_start)
+                    - datetime.fromisoformat(detail_last_ts)
+                ).total_seconds()
+                if 0 <= gap <= _CLEAR_GAP_THRESHOLD:
+                    detail.continued_as = next_id
+            except (ValueError, TypeError):
+                pass
 
 
 def _link_continuation_from_list(
     detail: SessionDetail, sessions: list[Session]
 ) -> None:
-    """Link a SessionDetail to its continuation using a list of parsed sessions."""
+    """Link a SessionDetail to its continuation using a list of parsed sessions.
+
+    Mirrors _link_continuation_sessions: sort all sessions by start_timestamp
+    and look for the immediate predecessor/successor within the gap threshold.
+    This avoids false positives from long-running sessions that happen to end
+    at similar times.
+    """
     if not detail.start_timestamp and not detail.timestamp:
         return
 
-    try:
-        detail_start = datetime.fromisoformat(detail.start_timestamp) if detail.start_timestamp else None
-        detail_end = datetime.fromisoformat(detail.timestamp) if detail.timestamp else None
-    except (ValueError, TypeError):
+    # Build a sorted list including the detail itself for positional lookup.
+    all_sessions: list[tuple[str, str, str, bool]] = []  # (start_ts, end_ts, id, is_clear)
+    for sess in sessions:
+        if sess.start_timestamp:
+            all_sessions.append((
+                sess.start_timestamp,
+                sess.timestamp,
+                sess.session_id,
+                sess.is_clear_start,
+            ))
+    # Add the detail.
+    all_sessions.append((
+        detail.start_timestamp,
+        detail.timestamp,
+        detail.session_id,
+        detail.is_clear_start,
+    ))
+    all_sessions.sort(key=lambda x: x[0])
+
+    # Find the detail's position.
+    detail_idx = -1
+    for i, (_, _, sid, _) in enumerate(all_sessions):
+        if sid == detail.session_id:
+            detail_idx = i
+            break
+    if detail_idx < 0:
         return
 
-    best_from: tuple[float, str] | None = None
-    best_as: tuple[float, str] | None = None
+    # Check predecessor: if this detail is a /clear start, look at the
+    # immediately preceding session.
+    if detail.is_clear_start and detail_idx > 0:
+        prev_start, prev_end, prev_id, _ = all_sessions[detail_idx - 1]
+        if prev_end and detail.start_timestamp:
+            try:
+                gap = (
+                    datetime.fromisoformat(detail.start_timestamp)
+                    - datetime.fromisoformat(prev_end)
+                ).total_seconds()
+                if 0 <= gap <= _CLEAR_GAP_THRESHOLD:
+                    detail.continued_from = prev_id
+            except (ValueError, TypeError):
+                pass
 
-    for sess in sessions:
-        if sess.session_id == detail.session_id:
-            continue
-
-        try:
-            sib_start = datetime.fromisoformat(sess.start_timestamp) if sess.start_timestamp else None
-            sib_end = datetime.fromisoformat(sess.timestamp) if sess.timestamp else None
-        except (ValueError, TypeError):
-            continue
-
-        if detail_end and sib_start:
-            gap = (sib_start - detail_end).total_seconds()
-            if 0 <= gap <= _CLEAR_GAP_THRESHOLD:
-                if best_as is None or gap < best_as[0]:
-                    best_as = (gap, sess.session_id)
-
-        if detail_start and sib_end:
-            gap = (detail_start - sib_end).total_seconds()
-            if 0 <= gap <= _CLEAR_GAP_THRESHOLD:
-                if best_from is None or gap < best_from[0]:
-                    best_from = (gap, sess.session_id)
-
-    if best_from:
-        detail.continued_from = best_from[1]
-    if best_as:
-        detail.continued_as = best_as[1]
+    # Check successor: look at the next session; link only if it is a
+    # /clear start.
+    if detail_idx < len(all_sessions) - 1:
+        next_start, next_end, next_id, next_clear = all_sessions[detail_idx + 1]
+        if next_clear and next_start and detail.timestamp:
+            try:
+                gap = (
+                    datetime.fromisoformat(next_start)
+                    - datetime.fromisoformat(detail.timestamp)
+                ).total_seconds()
+                if 0 <= gap <= _CLEAR_GAP_THRESHOLD:
+                    detail.continued_as = next_id
+            except (ValueError, TypeError):
+                pass
 
 
 # ---------------------------------------------------------------------------
@@ -1361,12 +1421,11 @@ def _link_continuation_sessions(
         by_id: dict[str, Session] = {s.session_id: s for s in sessions}
 
         for i, sess in enumerate(by_start):
-            # Only look at sessions whose first_prompt was originally a command
-            # or that we detected started from /clear.  We check if the session
-            # file has SessionStart:clear – but since we already detected it
-            # during parse_session, we can approximate: if the start_timestamp
-            # is close to the predecessor's end timestamp.
             if i == 0:
+                continue
+
+            # Only link sessions that were actually started via /clear.
+            if not sess.is_clear_start:
                 continue
 
             # Quick check: is this session's start very close to the
