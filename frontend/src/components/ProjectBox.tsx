@@ -71,7 +71,7 @@ export function ProjectBox({ group, displayName }: ProjectBoxProps) {
               className="font-mono text-base text-[var(--accent-cyan)] border-[var(--accent-cyan)]/30 hover:bg-[var(--accent-cyan)]/10 hover:border-[var(--accent-cyan)]"
               onPress={() => navigate(`/insights/${encodeURIComponent(group.projectName)}`)}
             >
-              Insights
+              View Project
             </Button>
           </div>
         </div>
