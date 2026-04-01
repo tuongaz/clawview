@@ -724,13 +724,14 @@ def parse_session_detail(fpath: str) -> SessionDetail | None:
                 if msg.type == "ai-title" and msg.ai_title:
                     ai_title = msg.ai_title
 
-                # Track waiting state.
+                # Track whether session is waiting for user input.
+                # Only tool_use means the model is still working; any other
+                # stop reason (end_turn, None, stop_sequence, max_tokens, etc.)
+                # means the turn ended and the session awaits user input.
                 if msg.type == "user":
                     waiting_for_input = False
-                elif msg.type == "assistant" and msg.message.stop_reason == "end_turn":
-                    waiting_for_input = True
-                elif msg.type == "assistant" and msg.message.stop_reason == "tool_use":
-                    waiting_for_input = False
+                elif msg.type == "assistant":
+                    waiting_for_input = msg.message.stop_reason != "tool_use"
 
                 # User prompt handling.
                 if msg.type == "user":

@@ -5,10 +5,9 @@ import remarkGfm from 'remark-gfm'
 import remarkBreaks from 'remark-breaks'
 import { MermaidDiagram } from './MermaidDiagram'
 import { DiagraphDiagram } from './DiagraphDiagram'
-import { DrawioDiagram } from './DrawioDiagram'
 import { ExcalidrawDiagram, looksLikeExcalidraw } from './ExcalidrawDiagram'
 
-const DIAGRAM_LANGUAGES = new Set(['mermaid', 'diagraph', 'digraph', 'drawio', 'draw.io', 'excalidraw'])
+const DIAGRAM_LANGUAGES = new Set(['mermaid', 'diagraph', 'digraph', 'excalidraw'])
 
 const components: Components = {
   pre({ children, ...props }) {
@@ -24,7 +23,7 @@ const components: Components = {
         children?: string
       }>
       const className = child.props?.className || ''
-      const match = className.match(/language-([\w.]+)/)
+      const match = className.match(/language-(\w+)/)
       const lang = match?.[1]
 
       const code = String(child.props?.children ?? '').trim()
@@ -36,9 +35,6 @@ const components: Components = {
         if (lang === 'diagraph' || lang === 'digraph') {
           return <DiagraphDiagram code={code} />
         }
-        if (lang === 'drawio' || lang === 'draw.io') {
-          return <DrawioDiagram code={code} />
-        }
         if (lang === 'excalidraw') {
           return <ExcalidrawDiagram code={code} />
         }
@@ -48,11 +44,6 @@ const components: Components = {
       // looks like a Graphviz digraph definition.
       if (!lang && /^\s*di(?:a?graph)\s+\w+\s*\{/i.test(code)) {
         return <DiagraphDiagram code={code} />
-      }
-
-      // Auto-detect: XML code blocks that look like draw.io diagrams
-      if (!lang && /^\s*<(?:mxfile|mxGraphModel)\b/i.test(code)) {
-        return <DrawioDiagram code={code} />
       }
 
       // Auto-detect: JSON code blocks that look like Excalidraw data
