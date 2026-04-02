@@ -22,7 +22,8 @@ __pycache__/
 .env
 
 docs
-src/clawview/web/
+src/clawview/web/*
+!src/clawview/web/.gitkeep
 dist/
 ralph/progress.txt
 tasks
