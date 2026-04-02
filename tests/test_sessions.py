@@ -5,7 +5,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from clawlens.models import Session
 from clawlens.sessions import (
+    ActiveInfo,
+    _propagate_active_through_chains,
     clean_command_text,
     decode_project_path,
     extract_action,
@@ -293,3 +296,91 @@ def test_parse_session_tool_use_not_waiting(tmp_path: Path) -> None:
     sess = parse_session(str(f))
     assert sess is not None
     assert sess.waiting_for_input is False
+
+
+# ---------------------------------------------------------------------------
+# _propagate_active_through_chains
+# ---------------------------------------------------------------------------
+
+
+def _make_session(sid: str, *, is_active: bool = False, continued_from: str = "", continued_as: str = "") -> Session:
+    return Session(session_id=sid, is_active=is_active, continued_from=continued_from, continued_as=continued_as)
+
+
+def _make_active_info(
+    active_ids: set[str] | None = None,
+    pids: dict[str, int] | None = None,
+) -> ActiveInfo:
+    return ActiveInfo(
+        session_ids=active_ids or set(),
+        session_pids=pids or {},
+        session_statuses={},
+        session_status_mtimes={},
+    )
+
+
+def test_propagate_chain_head_active_only_tail_stays_active() -> None:
+    """A->B->C chain where A is in registry: only C should be active."""
+    a = _make_session("a", is_active=True, continued_as="b")
+    b = _make_session("b", continued_from="a", continued_as="c")
+    c = _make_session("c", continued_from="b")
+    project_map = {"proj": [a, b, c]}
+    info = _make_active_info(active_ids={"a"}, pids={"a": 100})
+
+    _propagate_active_through_chains(project_map, info, {})
+
+    assert a.is_active is False
+    assert b.is_active is False
+    assert c.is_active is True
+
+
+def test_propagate_chain_tail_already_active() -> None:
+    """A->B chain where B is already in registry: B stays active, A becomes inactive."""
+    a = _make_session("a", is_active=False, continued_as="b")
+    b = _make_session("b", is_active=True, continued_from="a")
+    project_map = {"proj": [a, b]}
+    info = _make_active_info(active_ids={"b"}, pids={"b": 200})
+
+    _propagate_active_through_chains(project_map, info, {})
+
+    assert a.is_active is False
+    assert b.is_active is True
+
+
+def test_propagate_chain_middle_active() -> None:
+    """A->B->C chain where B is in registry: only C should be active."""
+    a = _make_session("a", continued_as="b")
+    b = _make_session("b", is_active=True, continued_from="a", continued_as="c")
+    c = _make_session("c", continued_from="b")
+    project_map = {"proj": [a, b, c]}
+    info = _make_active_info(active_ids={"b"}, pids={"b": 300})
+
+    _propagate_active_through_chains(project_map, info, {})
+
+    assert a.is_active is False
+    assert b.is_active is False
+    assert c.is_active is True
+
+
+def test_propagate_single_session_no_chain() -> None:
+    """Standalone active session without chain stays active."""
+    s = _make_session("s", is_active=True)
+    project_map = {"proj": [s]}
+    info = _make_active_info(active_ids={"s"}, pids={"s": 400})
+
+    _propagate_active_through_chains(project_map, info, {})
+
+    assert s.is_active is True
+
+
+def test_propagate_predecessor_deactivated_even_if_not_in_registry() -> None:
+    """A session with continued_as should be inactive regardless of registry."""
+    a = _make_session("a", continued_as="b")
+    b = _make_session("b", is_active=True, continued_from="a")
+    project_map = {"proj": [a, b]}
+    info = _make_active_info(active_ids={"b"}, pids={"b": 500})
+
+    _propagate_active_through_chains(project_map, info, {})
+
+    assert a.is_active is False
+    assert a.waiting_for_input is False

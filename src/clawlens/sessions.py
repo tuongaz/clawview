@@ -1013,6 +1013,11 @@ def enrich_session_detail(detail: SessionDetail, fpath: str) -> None:
     # Find continuation links for this session.
     _enrich_continuation_links(detail, fpath, home)
 
+    # Old sessions (continued via /clear) are always inactive.
+    if detail.continued_as:
+        detail.is_active = False
+        detail.waiting_for_input = False
+
 
 def _enrich_continuation_links(
     detail: SessionDetail, fpath: str, home: str
@@ -1400,7 +1405,7 @@ def _load_active_info(home: str) -> ActiveInfo:
 
 # Maximum gap (in seconds) between the end of one session and the start of
 # the next for them to be considered a continuation chain (via /clear).
-_CLEAR_GAP_THRESHOLD = 300  # 5 minutes
+_CLEAR_GAP_THRESHOLD = 10  # seconds – /clear handoff takes a few seconds
 
 
 def _detect_clear_start(fpath: str) -> bool:
@@ -1457,6 +1462,10 @@ def _link_continuation_sessions(
             if not sess.is_clear_start:
                 continue
 
+            # Skip sessions already linked (e.g. by PID-based linking).
+            if sess.continued_from:
+                continue
+
             if not sess.start_timestamp:
                 continue
 
@@ -1487,6 +1496,110 @@ def _link_continuation_sessions(
             if best_prev is not None:
                 best_prev.continued_as = sess.session_id
                 sess.continued_from = best_prev.session_id
+
+
+def _link_by_active_pid(
+    project_map: dict[str, list[Session]],
+    active_info: ActiveInfo,
+) -> None:
+    """Link /clear sessions to their predecessor using the process registry PID.
+
+    After /clear the same PID continues with a new session ID but the registry
+    still maps PID → old session ID.  Iterates so that chains like A→B→C are
+    fully linked even though only A appears in the registry.
+    """
+    for sessions in project_map.values():
+        clear_sessions = sorted(
+            [s for s in sessions if s.is_clear_start and s.start_timestamp],
+            key=lambda s: s.start_timestamp,
+        )
+        if not clear_sessions:
+            continue
+
+        # Sessions reachable from an active PID (grows as links are made).
+        in_chain: set[str] = {s.session_id for s in sessions if s.is_active}
+
+        changed = True
+        while changed:
+            changed = False
+            for sess in clear_sessions:
+                if sess.continued_from:
+                    continue
+                try:
+                    sess_start = datetime.fromisoformat(sess.start_timestamp)
+                except (ValueError, TypeError):
+                    continue
+
+                best_pred: Session | None = None
+                best_gap = float("inf")
+                for cand in sessions:
+                    if cand.session_id == sess.session_id or cand.continued_as:
+                        continue
+                    if cand.session_id not in in_chain or not cand.timestamp:
+                        continue
+                    try:
+                        gap = (sess_start - datetime.fromisoformat(cand.timestamp)).total_seconds()
+                    except (ValueError, TypeError):
+                        continue
+                    if gap >= 0 and gap < best_gap:
+                        best_pred = cand
+                        best_gap = gap
+
+                if best_pred is not None:
+                    best_pred.continued_as = sess.session_id
+                    sess.continued_from = best_pred.session_id
+                    in_chain.add(sess.session_id)
+                    changed = True
+
+
+def _propagate_active_through_chains(
+    project_map: dict[str, list[Session]],
+    active_info: ActiveInfo,
+    ide_pid_map: dict[int, str],
+) -> None:
+    """Propagate active status forward-only through /clear continuation chains.
+
+    The registry may point to any session in the chain (often the first),
+    so walk forward to the tail and mark only the tail as active.
+    Old (predecessor) sessions are always flagged as inactive.
+    """
+    for sessions in project_map.values():
+        by_id = {s.session_id: s for s in sessions}
+        for sess in sessions:
+            if not sess.is_active:
+                continue
+            # Only propagate from sessions that have been continued.
+            if not sess.continued_as:
+                continue
+            pid = active_info.session_pids.get(sess.session_id)
+            status = active_info.session_statuses.get(sess.session_id, "")
+            status_mtime = active_info.session_status_mtimes.get(sess.session_id, 0.0)
+            # Walk forward to the tail of the chain.
+            tail = sess
+            while tail.continued_as:
+                nxt = by_id.get(tail.continued_as)
+                if not nxt:
+                    break
+                tail = nxt
+            # Mark only the tail as active.
+            if tail is not sess:
+                tail.is_active = True
+                if pid:
+                    active_info.session_ids.add(tail.session_id)
+                    active_info.session_pids[tail.session_id] = pid
+                    tail.client = resolve_client_for_pid(pid, ide_pid_map)
+                    # Propagate waiting status to the tail.
+                    active_info.session_statuses[tail.session_id] = status
+                    active_info.session_status_mtimes[tail.session_id] = status_mtime
+                    if status in ("waiting", "idle"):
+                        if status_mtime and (time.time() - status_mtime) >= _WAITING_THRESHOLD_SECS:
+                            tail.waiting_for_input = True
+
+        # Deactivate all predecessor sessions (those continued via /clear).
+        for sess in sessions:
+            if sess.continued_as:
+                sess.is_active = False
+                sess.waiting_for_input = False
 
 
 # ---------------------------------------------------------------------------
@@ -1551,42 +1664,11 @@ def load_grouped_sessions(limit: int = 0) -> list[ProjectGroup]:
 
         project_map.setdefault(dir_name, []).append(sess)
 
-    # Link continuation sessions within each project.
-    _link_continuation_sessions(project_map)
+    # Link /clear sessions by PID: the registry still maps PID → old session.
+    _link_by_active_pid(project_map, active_info)
 
-    # Propagate active status through /clear continuation chains.
-    # The registry may point to any session in the chain (often the first),
-    # so propagate both forward (continued_as) and backward (continued_from).
-    for sessions in project_map.values():
-        by_id = {s.session_id: s for s in sessions}
-        for sess in sessions:
-            if not sess.is_active:
-                continue
-            pid = active_info.session_pids.get(sess.session_id)
-            # Propagate backward through continued_from.
-            cur = sess
-            while cur.continued_from:
-                prev = by_id.get(cur.continued_from)
-                if not prev or prev.is_active:
-                    break
-                prev.is_active = True
-                if pid:
-                    active_info.session_ids.add(prev.session_id)
-                    active_info.session_pids[prev.session_id] = pid
-                    prev.client = resolve_client_for_pid(pid, ide_pid_map)
-                cur = prev
-            # Propagate forward through continued_as.
-            cur = sess
-            while cur.continued_as:
-                nxt = by_id.get(cur.continued_as)
-                if not nxt or nxt.is_active:
-                    break
-                nxt.is_active = True
-                if pid:
-                    active_info.session_ids.add(nxt.session_id)
-                    active_info.session_pids[nxt.session_id] = pid
-                    nxt.client = resolve_client_for_pid(pid, ide_pid_map)
-                cur = nxt
+    # Propagate active status forward to the tail; deactivate predecessors.
+    _propagate_active_through_chains(project_map, active_info, ide_pid_map)
 
     # Build project groups.
     groups: list[ProjectGroup] = []
