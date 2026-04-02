@@ -1,6 +1,6 @@
 [project]
 name = "clawview"
-version = "0.1.0"
+version = "0.1.1"
 description = "Real-time dashboard for monitoring Claude Code sessions"
 readme = "README.md"
 license = "MIT"
