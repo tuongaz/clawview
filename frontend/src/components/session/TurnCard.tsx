@@ -65,8 +65,17 @@ function ImageThumbnail({ image }: { image: UserImage }) {
   )
 }
 
-function ToolExtraToggle({ extra }: { extra: string }) {
+function ToolInputDetail({ toolInput, toolExtra }: { toolInput: Record<string, unknown>; toolExtra: string }) {
   const [show, setShow] = useState(false)
+
+  // Build entries from tool_input, filtering out keys already shown in toolDetail
+  const entries = Object.entries(toolInput).filter(
+    ([, v]) => v !== undefined && v !== null && v !== ''
+  )
+  const hasContent = entries.length > 0 || toolExtra
+
+  if (!hasContent) return null
+
   return (
     <>
       <button
@@ -77,7 +86,26 @@ function ToolExtraToggle({ extra }: { extra: string }) {
       </button>
       {show && (
         <div className="basis-full ml-[calc(0.375rem+0.375rem)] pl-2 border-l border-[var(--border)] text-[13px] font-mono text-gray-500 break-all">
-          {extra}
+          {entries.length > 0 ? (
+            <div className="flex flex-col gap-1">
+              {entries.map(([key, value]) => {
+                const strVal = typeof value === 'string' ? value : JSON.stringify(value, null, 2)
+                const isLong = strVal.length > 120 || strVal.includes('\n')
+                return (
+                  <div key={key}>
+                    <span className="text-[var(--text-secondary)]">{key}: </span>
+                    {isLong ? (
+                      <pre className="mt-0.5 whitespace-pre-wrap text-gray-400 bg-[var(--bg-primary)] rounded px-2 py-1 overflow-x-auto">{strVal}</pre>
+                    ) : (
+                      <span className="text-gray-400">{strVal}</span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            toolExtra
+          )}
         </div>
       )}
     </>
@@ -141,8 +169,8 @@ export function TurnCard({ turn, isFirst, defaultExpanded, showWorking, showWait
                       {ev.toolDetail && (
                         <span className="text-[13px] text-[var(--text-secondary)] break-all">{ev.toolDetail}</span>
                       )}
-                      {ev.toolExtra && (
-                        <ToolExtraToggle extra={ev.toolExtra} />
+                      {(ev.toolInput && Object.keys(ev.toolInput).length > 0 || ev.toolExtra) && (
+                        <ToolInputDetail toolInput={ev.toolInput ?? {}} toolExtra={ev.toolExtra} />
                       )}
                     </div>
                   </div>

@@ -5,8 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from clawlens.models import Session
-from clawlens.sessions import (
+from clawview.models import Session
+from clawview.sessions import (
     ActiveInfo,
     _propagate_active_through_chains,
     clean_command_text,

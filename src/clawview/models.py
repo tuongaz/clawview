@@ -1,4 +1,4 @@
-"""Pydantic data models for ClawLens session data."""
+"""Pydantic data models for ClawView session data."""
 
 from __future__ import annotations
 
@@ -49,6 +49,7 @@ class TurnEvent(BaseModel):
     tool_name: str = ""  # for kind=="tool": tool name
     tool_detail: str = ""  # for kind=="tool": tool detail
     tool_extra: str = ""  # for kind=="tool": extra info (e.g. bash command)
+    tool_input: dict[str, Any] = {}  # for kind=="tool": full tool input params
 
 
 class TurnUsage(BaseModel):

@@ -6,7 +6,7 @@
 *.dylib
 *.test
 *.out
-/clawlens
+/clawview
 
 # Go
 go.work
@@ -22,7 +22,8 @@ __pycache__/
 .env
 
 docs
-web/dist
+src/clawview/web/
+dist/
 ralph/progress.txt
 tasks
 .playwright-mcp

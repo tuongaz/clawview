@@ -27,6 +27,7 @@ export interface TurnEvent {
   toolName: string   // for kind=="tool"
   toolDetail: string // for kind=="tool"
   toolExtra: string  // for kind=="tool": extra info (e.g. bash command)
+  toolInput: Record<string, unknown>  // for kind=="tool": full tool input params
 }
 
 export interface UserImage {

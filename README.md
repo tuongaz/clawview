@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="clawlens_logo_full.png" alt="ClawLens" width="500">
+  <img src="clawview_logo_full.png" alt="ClawView" width="500">
 </p>
 
 <p align="center">
@@ -15,7 +15,7 @@
 
 ---
 
-ClawLens reads the JSONL session files that Claude Code writes to `~/.claude/projects/` and presents them in a live-updating web dashboard. Track token usage, costs, tool invocations, errors, and more across all your coding sessions.
+ClawView reads the JSONL session files that Claude Code writes to `~/.claude/projects/` and presents them in a live-updating web dashboard. Track token usage, costs, tool invocations, errors, and more across all your coding sessions.
 
 ## Features
 
@@ -31,21 +31,23 @@ ClawLens reads the JSONL session files that Claude Code writes to `~/.claude/pro
 
 ## Quick Start
 
-### Prerequisites
+```bash
+uvx clawview
+```
 
-- [Python 3.11+](https://www.python.org/)
-- [uv](https://docs.astral.sh/uv/) (Python package manager)
-- [Bun](https://bun.sh/) (JavaScript runtime)
+That's it. Open **http://localhost:3333** in your browser.
 
-### Install and run
+> Requires [uv](https://docs.astral.sh/uv/) (install: `curl -LsSf https://astral.sh/uv/install.sh | sh`)
+
+### From source
 
 ```bash
-git clone https://github.com/tuongaz/clawlens.git
-cd clawlens
+git clone https://github.com/tuongaz/clawview.git
+cd clawview
 make run
 ```
 
-This builds the frontend, syncs Python dependencies, and starts the server on **http://localhost:3333**.
+This requires Python 3.11+, [uv](https://docs.astral.sh/uv/), and [Bun](https://bun.sh/).
 
 ## Development
 
@@ -56,7 +58,7 @@ Run the frontend and backend separately for hot-reload:
 cd frontend && bun run dev
 
 # Terminal 2 -- Backend
-uv run clawlens
+uv run clawview
 ```
 
 ### Other commands
@@ -65,12 +67,12 @@ uv run clawlens
 make build          # Build frontend + sync Python deps
 make clean          # Remove web/dist, frontend/node_modules, .venv
 uv run pytest       # Run tests
-uv run pyright src/clawlens/  # Type checking
+uv run pyright src/clawview/  # Type checking
 ```
 
 ## How It Works
 
-ClawLens is a Python (FastAPI) backend that serves a React (Vite) frontend as static files.
+ClawView is a Python (FastAPI) backend that serves a React (Vite) frontend as static files.
 
 ```mermaid
 flowchart LR

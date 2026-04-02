@@ -8,7 +8,7 @@ import os
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 
-from clawlens.models import TokenPeriod, TokenStats
+from clawview.models import TokenPeriod, TokenStats
 
 logger = logging.getLogger(__name__)
 

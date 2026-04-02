@@ -15,7 +15,7 @@ export function Header({ children }: HeaderProps) {
             <circle cx="16" cy="10" r="6" fill="#eab308" opacity="0.85" />
             <circle cx="13" cy="16" r="6" fill="#6b7280" opacity="0.7" />
           </svg>
-          <span className="font-[var(--font-mono)] text-xl font-bold text-white tracking-wide">ClawLens</span>
+          <span className="font-[var(--font-mono)] text-xl font-bold text-white tracking-wide">ClawView</span>
         </Link>
         {children}
       </div>

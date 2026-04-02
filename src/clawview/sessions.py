@@ -12,8 +12,8 @@ from datetime import datetime
 from dataclasses import dataclass
 from pathlib import Path
 
-from clawlens.ide import load_ide_pid_map, resolve_client_for_pid
-from clawlens.models import MemoryFile, Message, ProjectGroup, Session, SessionDetail, SubagentInvocation, Turn, TurnEvent, UserImage
+from clawview.ide import load_ide_pid_map, resolve_client_for_pid
+from clawview.models import MemoryFile, Message, ProjectGroup, Session, SessionDetail, SubagentInvocation, Turn, TurnEvent, UserImage
 
 logger = logging.getLogger(__name__)
 
@@ -849,8 +849,9 @@ def parse_session_detail(fpath: str) -> SessionDetail | None:
                                     text_parts = []
                                 name = part.get("name", "")
                                 if isinstance(name, str) and name:
+                                    raw_input = part.get("input")
                                     detail, extra = _extract_tool_detail(
-                                        name, part.get("input")
+                                        name, raw_input
                                     )
                                     current_turn.events.append(
                                         TurnEvent(
@@ -858,6 +859,9 @@ def parse_session_detail(fpath: str) -> SessionDetail | None:
                                             tool_name=name,
                                             tool_detail=detail,
                                             tool_extra=extra,
+                                            tool_input=raw_input
+                                            if isinstance(raw_input, dict)
+                                            else {},
                                         )
                                     )
                                     if name.startswith("mcp__"):

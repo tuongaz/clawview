@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   build: {
-    outDir: '../web/dist',
+    outDir: '../src/clawview/web',
     emptyOutDir: true,
   },
   server: {

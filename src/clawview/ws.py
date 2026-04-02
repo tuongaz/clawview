@@ -10,16 +10,16 @@ import os
 
 from fastapi import WebSocket, WebSocketDisconnect
 
-from clawlens.insights import compute_project_stats
-from clawlens.models import DashboardMessage, MemoryFile, ProjectGroup, SessionDetail
-from clawlens.sessions import (
+from clawview.insights import compute_project_stats
+from clawview.models import DashboardMessage, MemoryFile, ProjectGroup, SessionDetail
+from clawview.sessions import (
     enrich_session_detail,
     find_session_file,
     load_grouped_sessions,
     load_memory_files,
     parse_session_detail,
 )
-from clawlens.stats import load_token_stats
+from clawview.stats import load_token_stats
 
 logger = logging.getLogger(__name__)
 
