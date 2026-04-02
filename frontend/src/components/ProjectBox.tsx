@@ -16,16 +16,25 @@ export function ProjectBox({ group, displayName }: ProjectBoxProps) {
 
   const activeSessions = group.sessions.filter((s) => s.isActive)
   const idleSessions = group.sessions.filter((s) => !s.isActive)
-  const hasIdle = idleSessions.length > 0
   const hasActive = activeSessions.length > 0
+  const hasIdle = idleSessions.length > 0
   const hasWorking = activeSessions.some((s) => !s.waitingForInput)
   const projectIsWaiting = hasActive && !hasWorking
 
-  const [expanded, setExpanded] = useState(false)
+  const [filter, setFilter] = useState<'recent' | 'all' | 'active'>('recent')
 
-  const defaultSessions = hasActive ? activeSessions : idleSessions.slice(0, 4)
-  const visibleSessions = expanded ? group.sessions : defaultSessions
-  const hiddenCount = group.sessions.length - defaultSessions.length
+  const sortedSessions = [...activeSessions, ...idleSessions]
+  const visibleSessions = filter === 'all'
+    ? sortedSessions
+    : filter === 'active'
+      ? activeSessions
+      : sortedSessions.slice(0, 10)
+
+  const cycleFilter = () => {
+    setFilter(f => f === 'recent' ? 'all' : f === 'all' ? 'active' : 'recent')
+  }
+  const buttonLabel = filter === 'recent' ? 'Show All' : filter === 'all' ? 'Show Active' : 'Show Recent'
+  const showFilterButton = group.sessions.length > 10 || (hasActive && hasIdle)
 
   return (
     <Card className="bg-transparent border-0 shadow-none">
@@ -45,24 +54,14 @@ export function ProjectBox({ group, displayName }: ProjectBoxProps) {
               {group.sessions.length} session{group.sessions.length !== 1 ? 's' : ''}
               {hasActive && ` · ${activeSessions.length} active`}
             </span>
-            {!expanded && hiddenCount > 0 && (
+            {showFilterButton && (
               <Button
                 variant="outline"
                 size="sm"
                 className="font-mono text-base text-[var(--text-secondary)] border-[var(--border)] hover:text-[var(--text-primary)] hover:border-[var(--accent-cyan)]"
-                onPress={() => setExpanded(true)}
+                onPress={cycleFilter}
               >
-                Show All
-              </Button>
-            )}
-            {expanded && hasIdle && hasActive && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="font-mono text-base text-[var(--text-secondary)] border-[var(--border)] hover:text-[var(--text-primary)] hover:border-[var(--accent-cyan)]"
-                onPress={() => setExpanded(false)}
-              >
-                Show Active
+                {buttonLabel}
               </Button>
             )}
             <Button

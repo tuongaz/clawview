@@ -60,14 +60,25 @@ export function ProjectInsightsPage() {
   const sessionId = group?.sessions[0]?.sessionId ?? null
 
   const [activeTab, setActiveTab] = useState<'sessions' | 'insights'>('sessions')
-  const [showAll, setShowAll] = useState(false)
+  const [filter, setFilter] = useState<'recent' | 'all' | 'active'>('recent')
 
   const activeSessions = group?.sessions.filter(s => s.isActive) ?? []
-  const hasIdleSessions = activeSessions.length < (group?.sessions.length ?? 0)
+  const idleSessions = group?.sessions.filter(s => !s.isActive) ?? []
+  const hasActive = activeSessions.length > 0
+  const hasIdle = idleSessions.length > 0
+  const sortedSessions = [...activeSessions, ...idleSessions]
   const filteredSessions = useMemo(() => {
     if (!group) return []
-    return showAll ? group.sessions : group.sessions.filter(s => s.isActive)
-  }, [group, showAll])
+    if (filter === 'all') return sortedSessions
+    if (filter === 'active') return activeSessions
+    return sortedSessions.slice(0, 10)
+  }, [group, filter, sortedSessions, activeSessions])
+
+  const cycleFilter = () => {
+    setFilter(f => f === 'recent' ? 'all' : f === 'all' ? 'active' : 'recent')
+  }
+  const buttonLabel = filter === 'recent' ? 'Show All' : filter === 'all' ? 'Show Active' : 'Show Recent'
+  const showFilterButton = (group?.sessions.length ?? 0) > 10 || (hasActive && hasIdle)
 
   const displayName = useMemo(() => {
     if (!group) return projectName
@@ -111,14 +122,14 @@ export function ProjectInsightsPage() {
                   <span className="font-mono text-sm text-[var(--text-secondary)]">
                     {filteredSessions.length} session{filteredSessions.length !== 1 ? 's' : ''}
                   </span>
-                  {hasIdleSessions && (
+                  {showFilterButton && (
                     <Button
                       variant="outline"
                       size="sm"
                       className="font-mono text-base text-[var(--text-secondary)] border-[var(--border)] hover:text-[var(--text-primary)] hover:border-[var(--accent-cyan)]"
-                      onPress={() => setShowAll(!showAll)}
+                      onPress={cycleFilter}
                     >
-                      {showAll ? 'Show Active' : 'Show All'}
+                      {buttonLabel}
                     </Button>
                   )}
                 </div>
@@ -128,7 +139,7 @@ export function ProjectInsightsPage() {
                   ))}
                 </div>
                 {filteredSessions.length === 0 && (
-                  <EmptyState message={showAll ? 'No sessions for this project.' : 'No active sessions.'} className="py-12" />
+                  <EmptyState message={filter === 'active' ? 'No active sessions.' : 'No sessions for this project.'} className="py-12" />
                 )}
               </div>
             )}
