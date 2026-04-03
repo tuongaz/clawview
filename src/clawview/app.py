@@ -13,6 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from clawview.sessions import (
     enrich_session_detail,
     find_session_file,
+    load_grouped_sessions,
     load_memory_files,
     load_skill_content,
     parse_session_detail,
@@ -62,6 +63,31 @@ async def ws_session_memory_route(ws: WebSocket, session_id: str) -> None:
 @app.websocket("/ws/insights/{session_id}")
 async def ws_insights_route(ws: WebSocket, session_id: str) -> None:
     await session_insights_websocket(ws, session_id)
+
+
+@app.get("/api/projects/{project_path:path}/sessions")
+async def get_project_sessions(
+    project_path: str, offset: int = 0, limit: int = 20
+) -> JSONResponse:
+    """Return paginated sessions for a project."""
+    # Load all sessions (no limit) so we can slice with offset
+    groups = await asyncio.to_thread(load_grouped_sessions, 0)
+    for g in groups:
+        if g.project_name == project_path:
+            total = len(g.sessions)
+            sliced = g.sessions[offset : offset + limit]
+            return JSONResponse(
+                content={
+                    "sessions": [
+                        s.model_dump(by_alias=True, mode="json") for s in sliced
+                    ],
+                    "total": total,
+                    "offset": offset,
+                    "limit": limit,
+                    "hasMore": offset + limit < total,
+                }
+            )
+    return JSONResponse(status_code=404, content={"error": "Project not found"})
 
 
 @app.get("/api/sessions/{session_id}")

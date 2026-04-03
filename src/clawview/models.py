@@ -37,6 +37,8 @@ class Session(BaseModel):
     continued_from: str = ""  # session_id this continues from (after /clear)
     continued_as: str = ""  # session_id of continuation (after /clear)
     is_clear_start: bool = False  # True if session was started via /clear
+    team_name: str = ""  # team name if session is part of a team
+    agent_name: str = ""  # non-empty for teammate sessions only
 
 
 class TurnEvent(BaseModel):
@@ -121,6 +123,8 @@ class SessionDetail(BaseModel):
     continued_from: str = ""
     continued_as: str = ""
     is_clear_start: bool = False
+    team_name: str = ""
+    agent_name: str = ""
 
     # Detail-specific fields
     tool_usage: dict[str, int] = {}
@@ -136,6 +140,7 @@ class SessionDetail(BaseModel):
     total_duration_ms: int = 0
     turn_count: int = 0
     turns: list[Turn] = []
+    teammate_session_ids: list[str] = []
 
 
 class ProjectGroup(BaseModel):
@@ -144,6 +149,7 @@ class ProjectGroup(BaseModel):
     project_name: str = ""
     path: str = ""
     sessions: list[Session] = []
+    total_sessions: int = 0  # total count before limit applied
 
 
 class TokenPeriod(BaseModel):
@@ -210,3 +216,4 @@ class Message(BaseModel):
     timestamp: str = ""
     message: MessageContent = MessageContent()
     version: str = ""
+    team_name: str = ""

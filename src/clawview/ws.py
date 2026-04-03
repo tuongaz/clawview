@@ -46,7 +46,7 @@ async def websocket_endpoint(ws: WebSocket) -> None:
 
     try:
         while True:
-            groups = await asyncio.to_thread(load_grouped_sessions, 0)
+            groups = await asyncio.to_thread(load_grouped_sessions, 8)
             stats = await asyncio.to_thread(load_token_stats)
 
             msg = DashboardMessage(groups=groups, stats=stats)

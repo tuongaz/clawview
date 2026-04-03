@@ -9,6 +9,7 @@ interface TurnCardProps {
   defaultExpanded?: boolean
   showWorking?: boolean
   showWaiting?: boolean
+  onTeammateClick?: (teammateId: string) => void
 }
 
 function getPreviewText(turn: Turn): string {
@@ -112,7 +113,7 @@ function ToolInputDetail({ toolInput, toolExtra }: { toolInput: Record<string, u
   )
 }
 
-export function TurnCard({ turn, isFirst, defaultExpanded, showWorking, showWaiting }: TurnCardProps) {
+export function TurnCard({ turn, isFirst, defaultExpanded, showWorking, showWaiting, onTeammateClick }: TurnCardProps) {
   const [expanded, setExpanded] = useState(defaultExpanded ?? true)
 
   return (
@@ -138,7 +139,7 @@ export function TurnCard({ turn, isFirst, defaultExpanded, showWorking, showWait
           {turn.userPrompt && (
             <div className="pb-4 mb-4 border-b border-white/10 break-words">
               <div className="text-base text-white">
-                <TaskNotificationContent text={turn.userPrompt} />
+                <TaskNotificationContent text={turn.userPrompt} onTeammateClick={onTeammateClick} />
               </div>
               {turn.images && turn.images.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
@@ -177,7 +178,7 @@ export function TurnCard({ turn, isFirst, defaultExpanded, showWorking, showWait
                 ) : (
                   <div key={i} className="flex gap-1.5 text-base text-[var(--text-primary)] break-words">
                     <span className="flex items-center shrink-0 h-[1.5em] leading-[1.5em]"><span className="w-1.5 h-1.5 rounded-full bg-[var(--text-secondary)]" /></span>
-                    <TaskNotificationContent text={ev.text} />
+                    <TaskNotificationContent text={ev.text} onTeammateClick={onTeammateClick} />
                   </div>
                 )
               )}

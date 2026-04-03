@@ -19,6 +19,8 @@ export interface Session {
   client: string
   continuedFrom: string  // session_id this continues from (after /clear)
   continuedAs: string    // session_id of continuation (after /clear)
+  teamName: string       // team name if session is part of a team
+  agentName: string      // non-empty for teammate sessions only
 }
 
 export interface TurnEvent {
@@ -76,6 +78,7 @@ export interface SessionDetail extends Session {
   totalDurationMs: number
   turnCount: number
   turns: Turn[]
+  teammateSessionIds: string[]
 }
 
 export interface MemoryFile {
@@ -87,6 +90,7 @@ export interface ProjectGroup {
   projectName: string
   path: string
   sessions: Session[]
+  totalSessions: number
 }
 
 export interface TokenPeriod {

@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { Card, Button } from '@heroui/react'
 import { useNavigate } from 'react-router-dom'
-import type { ProjectGroup } from '../types'
+import { ChevronDown } from 'lucide-react'
+import type { ProjectGroup, Session } from '../types'
 import { SessionCard } from './SessionCard'
 import { StatusIndicator } from './StatusIndicator'
 
@@ -13,28 +14,43 @@ interface ProjectBoxProps {
 export function ProjectBox({ group, displayName }: ProjectBoxProps) {
   const name = displayName
   const navigate = useNavigate()
+  const [extraSessions, setExtraSessions] = useState<Session[]>([])
+  const [loadingMore, setLoadingMore] = useState(false)
 
-  const activeSessions = group.sessions.filter((s) => s.isActive)
-  const idleSessions = group.sessions.filter((s) => !s.isActive)
+  // Merge WS sessions with any extra loaded via REST
+  const allSessions = (() => {
+    if (extraSessions.length === 0) return group.sessions
+    const wsIds = new Set(group.sessions.map(s => s.sessionId))
+    const extras = extraSessions.filter(s => !wsIds.has(s.sessionId))
+    return [...group.sessions, ...extras]
+  })()
+
+  const activeSessions = allSessions.filter((s) => s.isActive)
+  const idleSessions = allSessions.filter((s) => !s.isActive)
   const hasActive = activeSessions.length > 0
-  const hasIdle = idleSessions.length > 0
   const hasWorking = activeSessions.some((s) => !s.waitingForInput)
   const projectIsWaiting = hasActive && !hasWorking
 
-  const [filter, setFilter] = useState<'recent' | 'all' | 'active'>('recent')
+  const totalOnServer = group.totalSessions || group.sessions.length
+  const hasMore = allSessions.length < totalOnServer
+
+  const loadMore = useCallback(async () => {
+    setLoadingMore(true)
+    try {
+      const offset = allSessions.length
+      const res = await fetch(
+        `/api/projects/${encodeURIComponent(group.projectName)}/sessions?offset=${offset}&limit=20`
+      )
+      if (res.ok) {
+        const data = await res.json()
+        setExtraSessions(prev => [...prev, ...data.sessions])
+      }
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [allSessions.length, group.projectName])
 
   const sortedSessions = [...activeSessions, ...idleSessions]
-  const visibleSessions = filter === 'all'
-    ? sortedSessions
-    : filter === 'active'
-      ? activeSessions
-      : sortedSessions.slice(0, 8)
-
-  const cycleFilter = () => {
-    setFilter(f => f === 'recent' ? 'all' : 'active')
-  }
-  const buttonLabel = filter === 'recent' ? 'Show All' : filter === 'all' ? 'Show Active' : 'Show All'
-  const showFilterButton = group.sessions.length > 8 || (hasActive && hasIdle)
 
   return (
     <Card className="bg-transparent border-0 shadow-none">
@@ -51,19 +67,9 @@ export function ProjectBox({ group, displayName }: ProjectBoxProps) {
           </div>
           <div className="flex items-center gap-3 ml-auto shrink-0">
             <span className="font-mono text-sm text-[var(--text-secondary)] whitespace-nowrap">
-              {group.sessions.length} session{group.sessions.length !== 1 ? 's' : ''}
+              {totalOnServer} session{totalOnServer !== 1 ? 's' : ''}
               {hasActive && ` · ${activeSessions.length} active`}
             </span>
-            {showFilterButton && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="font-mono text-base text-[var(--text-secondary)] border-[var(--border)] hover:text-[var(--text-primary)] hover:border-[var(--accent-cyan)]"
-                onPress={cycleFilter}
-              >
-                {buttonLabel}
-              </Button>
-            )}
             <Button
               variant="outline"
               size="sm"
@@ -78,10 +84,31 @@ export function ProjectBox({ group, displayName }: ProjectBoxProps) {
 
       <Card.Content className="p-0 pt-3 px-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-3 items-stretch">
-          {visibleSessions.map((session) => (
+          {sortedSessions.map((session) => (
             <SessionCard key={session.sessionId} session={session} projectPath={group.path} />
           ))}
         </div>
+
+        {hasMore && (
+          <div className="flex justify-center pt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              isDisabled={loadingMore}
+              className="font-mono text-sm text-[var(--text-secondary)] border-[var(--border)] hover:text-[var(--text-primary)] hover:border-[var(--accent-cyan)]"
+              onPress={loadMore}
+            >
+              {loadingMore ? (
+                'Loading...'
+              ) : (
+                <>
+                  <ChevronDown size={14} />
+                  Load more ({totalOnServer - allSessions.length} remaining)
+                </>
+              )}
+            </Button>
+          </div>
+        )}
       </Card.Content>
     </Card>
   )

@@ -1,19 +1,76 @@
 import { useState, useCallback } from 'react'
 import { useParams, Outlet, Link } from 'react-router-dom'
-import { Brain, ArrowLeft, ArrowRight, Keyboard } from 'lucide-react'
+import { Brain, ArrowLeft, ArrowRight, Keyboard, Users, X } from 'lucide-react'
 import { Chip, Meter, Skeleton } from '@heroui/react'
 import { useSessionDetail } from '../hooks/useSessionDetail'
 import { StatusIndicator } from '../components/StatusIndicator'
 import { Header } from '../components/Header'
 import { SectionCard, MetadataField, ErrorAlert, EmptyState, ThemedChip, CollapsibleSection } from '../components/ui'
-import { ConversationTimeline, StatBox, SkillsSubagentsSection, ToolUsageSection } from '../components/session'
+import { ConversationTimeline, StatBox, SkillsSubagentsSection, ToolUsageSection, SessionContent } from '../components/session'
 import { timeAgo, formatTokens, formatDuration, formatElapsed, contextColor, GitBranchIcon, getClientIcon, ideDeepLink } from '../utils'
+
+function TeammateResolver({ sessionId, targetName }: { sessionId: string; targetName: string }) {
+  const { detail, loading } = useSessionDetail(sessionId)
+
+  if (loading || !detail) {
+    return (
+      <div className="p-4 animate-pulse space-y-3">
+        {Array.from({ length: 2 }, (_, i) => (
+          <div key={i} className="flex gap-3">
+            <Skeleton className="w-6 h-6 rounded-full shrink-0" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="w-24 h-3 rounded" />
+              <Skeleton className="w-full h-12 rounded" />
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  const name = detail.agentName || detail.name || detail.sessionId.slice(0, 8)
+  if (name !== targetName) return null
+
+  return <SessionContent detail={detail} label={name} showSidebar={false} />
+}
+
+function TeammateSidebar({ teammateSessionIds, targetName, onClose }: { teammateSessionIds: string[]; targetName: string; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      {/* Panel */}
+      <div className="relative w-[800px] max-w-full h-full bg-[var(--bg-primary)] border-l border-[var(--border)] shadow-2xl flex flex-col animate-slide-in-right">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)] shrink-0">
+          <div className="flex items-center gap-2">
+            <Users size={16} className="text-[var(--accent-green)]" />
+            <span className="text-lg font-semibold text-[var(--text-bright)]">{targetName}</span>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/10 transition-colors cursor-pointer"
+          >
+            <X size={18} />
+          </button>
+        </div>
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-4">
+          {teammateSessionIds.map(sid => (
+            <TeammateResolver key={sid} sessionId={sid} targetName={targetName} />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export function SessionDetailPage() {
   const { sessionId } = useParams<{ sessionId: string }>()
   const { detail, loading, error } = useSessionDetail(sessionId ?? '')
   const [showAllTurns, setShowAllTurns] = useState(false)
   const handleShowAll = useCallback(() => setShowAllTurns(true), [])
+  const [selectedTeammateName, setSelectedTeammateName] = useState<string | null>(null)
 
   if (loading) {
     return (
@@ -79,6 +136,7 @@ export function SessionDetailPage() {
   const slug = detail.sessionId.slice(0, 8)
   const isActive = detail.isActive
   const isWaiting = detail.waitingForInput
+  const hasTeammates = detail.teammateSessionIds && detail.teammateSessionIds.length > 0
   const pct = detail.maxContextTokens > 0
     ? Math.round((detail.contextTokens / detail.maxContextTokens) * 100)
     : 0
@@ -117,6 +175,12 @@ export function SessionDetailPage() {
             </>
           )}
           <div className="flex items-center gap-2 ml-auto text-right">
+            {detail.teamName && (
+              <ThemedChip color="green">
+                <Users size={12} />
+                {detail.agentName ? detail.agentName : `Team: ${detail.teamName}`}
+              </ThemedChip>
+            )}
             {detail.model && <ThemedChip color="cyan">{detail.model}</ThemedChip>}
             {detail.version && (
               <Chip size="sm" variant="secondary" className="font-mono text-sm text-[var(--text-secondary)]">
@@ -160,18 +224,23 @@ export function SessionDetailPage() {
         </div>
       )}
 
-<div className="pl-8 pr-4 py-6 max-sm:px-4 max-sm:py-4 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-10">
-        {/* Left: Conversation */}
+      {/* Content area */}
+      <div className="pl-8 pr-4 py-6 max-sm:px-4 max-sm:py-4 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-10">
         <div className="order-2 lg:order-1 min-w-0">
           {detail.turns.length > 0 ? (
-            <ConversationTimeline turns={detail.turns} isActive={isActive} isWaiting={isWaiting} showAll={showAllTurns} onShowAll={handleShowAll} />
+            <ConversationTimeline
+              turns={detail.turns}
+              isActive={isActive}
+              isWaiting={isWaiting}
+              showAll={showAllTurns}
+              onShowAll={handleShowAll}
+              onTeammateClick={hasTeammates ? setSelectedTeammateName : undefined}
+            />
           ) : (
             <EmptyState message="No conversation yet" />
           )}
         </div>
-
-        {/* Right: Session Details */}
-        <div className="order-1 lg:order-2 lg:sticky lg:top-[60px] lg:self-start space-y-4">
+        <div className="order-1 lg:order-2 space-y-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto custom-scrollbar">
           <CollapsibleSection title="Session Info">
             <SectionCard className="space-y-3">
               {detail.cwd && (
@@ -179,7 +248,6 @@ export function SessionDetailPage() {
                   <span className="font-mono text-base text-[var(--text-primary)] break-all">{detail.cwd}</span>
                 </MetadataField>
               )}
-
               {(detail.gitBranch || detail.client) && (
                 <div className="flex items-center justify-between gap-3">
                   {detail.gitBranch && (
@@ -208,7 +276,6 @@ export function SessionDetailPage() {
                   )}
                 </div>
               )}
-
               {detail.usesMemory && (
                 <MetadataField label="Memory" info="Whether Claude's persistent memory system is enabled for this project.">
                   <Link to={`/session/${detail.sessionId}/memory`}>
@@ -218,15 +285,9 @@ export function SessionDetailPage() {
                   </Link>
                 </MetadataField>
               )}
-
               {detail.contextTokens > 0 && (
                 <MetadataField label="Context Usage" info="How much of the model's context window has been consumed. High usage may trigger compaction.">
-                  <Meter
-                    value={pct}
-                    minValue={0}
-                    maxValue={100}
-                    color={contextColor(detail.contextTokens, detail.maxContextTokens)}
-                  >
+                  <Meter value={pct} minValue={0} maxValue={100} color={contextColor(detail.contextTokens, detail.maxContextTokens)}>
                     <div className="flex justify-between items-center mb-0.5">
                       <span className="text-base font-mono text-[var(--text-secondary)]">
                         {formatTokens(detail.contextTokens)} / {formatTokens(detail.maxContextTokens)}
@@ -264,6 +325,15 @@ export function SessionDetailPage() {
           </CollapsibleSection>
         </div>
       </div>
+
+      {/* Teammate sidebar panel */}
+      {selectedTeammateName && hasTeammates && (
+        <TeammateSidebar
+          teammateSessionIds={detail.teammateSessionIds}
+          targetName={selectedTeammateName}
+          onClose={() => setSelectedTeammateName(null)}
+        />
+      )}
     </div>
   )
 }

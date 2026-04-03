@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react'
 import { ChevronsDownUp, ChevronsUpDown } from 'lucide-react'
 import { Popover } from '@heroui/react'
 import type { Turn } from '../../types'
-import { SectionTitle } from '../ui'
 import { TurnCard } from './TurnCard'
 import { formatDuration, formatTokens } from '../../utils'
 
@@ -14,6 +13,7 @@ interface ConversationTimelineProps {
   isWaiting: boolean
   showAll: boolean
   onShowAll: () => void
+  onTeammateClick?: (teammateId: string) => void
 }
 
 function formatTime(ts: string): string {
@@ -22,7 +22,7 @@ function formatTime(ts: string): string {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 }
 
-export function ConversationTimeline({ turns, isActive, isWaiting, showAll, onShowAll }: ConversationTimelineProps) {
+export function ConversationTimeline({ turns, isActive, isWaiting, showAll, onShowAll, onTeammateClick }: ConversationTimelineProps) {
   const visibleTurns = showAll ? turns : turns.slice(0, INITIAL_TURNS_SHOWN)
   const hasMore = turns.length > INITIAL_TURNS_SHOWN
   const firstTimestamp = turns.length > 0 ? new Date(turns[0].timestamp).getTime() : 0
@@ -104,10 +104,7 @@ export function ConversationTimeline({ turns, isActive, isWaiting, showAll, onSh
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <SectionTitle className="gap-2">
-          Conversation Timeline ({turns.length} turn{turns.length !== 1 ? 's' : ''})
-        </SectionTitle>
+      <div className="flex items-center justify-end">
         <button
           onClick={toggleAll}
           className="flex items-center gap-1 text-sm text-[var(--text-secondary)] hover:text-[var(--accent-cyan)] transition-colors cursor-pointer"
@@ -203,7 +200,7 @@ export function ConversationTimeline({ turns, isActive, isWaiting, showAll, onSh
               </div>
               {/* Turn card */}
               <div className="flex-1 min-w-0 pb-2">
-                <TurnCard turn={turn} isFirst={turn.index === 1} defaultExpanded={allExpanded} showWorking={isActive && isLast && !isWaiting && (Date.now() - new Date(turn.timestamp).getTime()) < 5 * 60 * 1000} showWaiting={isActive && isLast && isWaiting} />
+                <TurnCard turn={turn} isFirst={turn.index === 1} defaultExpanded={allExpanded} showWorking={isActive && isLast && !isWaiting && (Date.now() - new Date(turn.timestamp).getTime()) < 5 * 60 * 1000} showWaiting={isActive && isLast && isWaiting} onTeammateClick={onTeammateClick} />
               </div>
             </div>
           )

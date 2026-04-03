@@ -528,6 +528,8 @@ def parse_session(fpath: str) -> Session | None:
     cwd = ""
     git_branch = ""
     version = ""
+    team_name = ""
+    team_agent_name = ""
 
     try:
         with open(fpath, encoding="utf-8", errors="replace") as f:
@@ -552,6 +554,12 @@ def parse_session(fpath: str) -> Session | None:
                     msg = Message.model_validate_json(line)
                 except Exception:
                     continue
+
+                # Extract team info (first non-empty wins).
+                if not team_name and msg.team_name:
+                    team_name = msg.team_name
+                if not team_agent_name and msg.agent_name:
+                    team_agent_name = msg.agent_name
 
                 # Capture session metadata from first valid message.
                 if not session_id and msg.session_id:
@@ -642,6 +650,8 @@ def parse_session(fpath: str) -> Session | None:
         max_context_tokens=get_model_context_limit(last_model),
         version=version,
         is_clear_start=started_from_clear,
+        team_name=team_name,
+        agent_name=team_agent_name,
     )
 
 
@@ -668,6 +678,8 @@ def parse_session_detail(fpath: str) -> SessionDetail | None:
     last_model = ""
     last_context_tokens = 0
     started_from_clear = False
+    team_name = ""
+    team_agent_name = ""
 
     # Turns
     turns: list[Turn] = []
@@ -737,6 +749,13 @@ def parse_session_detail(fpath: str) -> SessionDetail | None:
                     version = msg.version
                 if msg.type == "agent-name" and msg.agent_name:
                     session_name = msg.agent_name
+
+                # Extract team info (first non-empty wins).
+                if not team_name and msg.team_name:
+                    team_name = msg.team_name
+                raw_agent = raw.get("agentName", "")
+                if not team_agent_name and isinstance(raw_agent, str) and raw_agent:
+                    team_agent_name = raw_agent
                 if msg.type == "custom-title" and msg.custom_title:
                     custom_title = msg.custom_title
                 if msg.type == "ai-title" and msg.ai_title:
@@ -956,6 +975,8 @@ def parse_session_detail(fpath: str) -> SessionDetail | None:
         max_context_tokens=get_model_context_limit(last_model),
         version=version,
         is_clear_start=started_from_clear,
+        team_name=team_name,
+        agent_name=team_agent_name,
         tool_usage=tool_usage,
         mcp_tool_usage=mcp_tool_usage,
         skills_used=sorted(skills_used),
@@ -986,6 +1007,55 @@ def _apply_active_status(
             mtime = active_info.session_status_mtimes.get(sess.session_id, 0.0)
             if mtime and (time.time() - mtime) >= _WAITING_THRESHOLD_SECS:
                 sess.waiting_for_input = True
+
+
+def _find_teammate_sessions(
+    team_name: str, project_dir: str, lead_session_id: str
+) -> list[str]:
+    """Find teammate session IDs in the project directory for a given team.
+
+    Scans sibling JSONL files looking for ones with matching teamName and
+    a non-empty agentName (which marks them as teammate sessions).
+    """
+    results: list[str] = []
+    try:
+        entries = os.listdir(project_dir)
+    except OSError:
+        return results
+    for fname in entries:
+        if not fname.endswith(".jsonl"):
+            continue
+        sid = fname.removesuffix(".jsonl")
+        if sid == lead_session_id:
+            continue
+        fpath = os.path.join(project_dir, fname)
+        try:
+            with open(fpath, encoding="utf-8", errors="replace") as f:
+                found_team = ""
+                found_agent = ""
+                for i, line in enumerate(f):
+                    if i > 50:
+                        break
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        raw = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    t = raw.get("teamName", "")
+                    if isinstance(t, str) and t:
+                        found_team = t
+                    a = raw.get("agentName", "")
+                    if isinstance(a, str) and a:
+                        found_agent = a
+                    if found_team and found_agent:
+                        break
+                if found_team == team_name and found_agent:
+                    results.append(sid)
+        except OSError:
+            pass
+    return results
 
 
 def enrich_session_detail(detail: SessionDetail, fpath: str) -> None:
@@ -1021,6 +1091,13 @@ def enrich_session_detail(detail: SessionDetail, fpath: str) -> None:
     if detail.continued_as:
         detail.is_active = False
         detail.waiting_for_input = False
+
+    # Find teammate sessions if this is a team lead session.
+    if detail.team_name and not detail.agent_name:
+        project_dir = os.path.dirname(fpath)
+        detail.teammate_session_ids = _find_teammate_sessions(
+            detail.team_name, project_dir, detail.session_id
+        )
 
 
 def _enrich_continuation_links(
@@ -1687,6 +1764,7 @@ def load_grouped_sessions(limit: int = 0) -> list[ProjectGroup]:
             reverse=True,
         )
         sessions[:] = active + inactive
+        total = len(sessions)
 
         if limit > 0 and len(sessions) > limit:
             sessions = sessions[:limit]
@@ -1714,6 +1792,7 @@ def load_grouped_sessions(limit: int = 0) -> list[ProjectGroup]:
                 project_name=decoded_path,
                 path=decoded_path,
                 sessions=sessions,
+                total_sessions=total,
             )
         )
 
