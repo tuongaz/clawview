@@ -240,7 +240,7 @@ export function SessionDetailPage() {
             <EmptyState message="No conversation yet" />
           )}
         </div>
-        <div className="order-1 lg:order-2 space-y-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto custom-scrollbar">
+        <div className="order-1 lg:order-2 space-y-4 lg:sticky lg:top-4 lg:self-start">
           <CollapsibleSection title="Session Info">
             <SectionCard className="space-y-3">
               {detail.cwd && (
